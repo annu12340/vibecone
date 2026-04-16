@@ -1,91 +1,62 @@
 {
   "theme": "light",
-  "archetype": "4_swiss_high_contrast",
-  "design_philosophy": "Authoritative, objective, and transparent. Merging the traditional trust of a legal institution (serif fonts, deep navy) with the precision of a modern AI control room (sharp grid borders, sterile sans-serif data points).",
-  "typography": {
-    "primary_font": "Playfair Display",
-    "primary_font_type": "serif",
-    "secondary_font": "IBM Plex Sans",
-    "secondary_font_type": "sans-serif",
-    "hierarchy": {
-      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-none font-medium text-slate-900",
-      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-tight text-slate-900",
-      "h3": "text-xl sm:text-2xl font-medium text-slate-900",
-      "h4": "text-lg sm:text-xl font-medium text-slate-900",
-      "body": "text-base leading-relaxed text-slate-700",
-      "small_label": "text-xs tracking-[0.2em] uppercase font-semibold text-slate-500"
-    }
-  },
+  "archetype": "Swiss & High-Contrast / Authority",
   "colors": {
-    "background": {
-      "primary": "#FFFFFF",
-      "secondary": "#F8F9FA",
-      "tertiary": "#F1F5F9"
-    },
-    "text": {
-      "primary": "#0F172A",
-      "secondary": "#475569",
-      "muted": "#64748B"
-    },
-    "brand": {
-      "primary": "#0B192C",
-      "primary_hover": "#1E293B",
-      "accent": "#C5A059"
-    },
-    "status": {
-      "bias_detected": "#991B1B",
-      "neutral": "#64748B",
-      "safe": "#166534"
+    "primary": "#0B192C",
+    "accent": "#C5A059",
+    "background": "#F8F9FA",
+    "surface": "#FFFFFF",
+    "surface_dark": "#0B192C",
+    "text_main": "#0B192C",
+    "text_muted": "#475569",
+    "border": "#E2E8F0",
+    "success": "#2E7D32",
+    "danger": "#C62828"
+  },
+  "typography": {
+    "headings": "Playfair Display",
+    "body": "IBM Plex Sans",
+    "h1": "text-4xl tracking-tight font-black text-[#0B192C]",
+    "h2": "text-2xl tracking-tight font-bold text-[#0B192C]",
+    "h3": "text-xl font-semibold text-[#0B192C]",
+    "h4": "text-sm uppercase tracking-[0.2em] font-medium text-[#475569]",
+    "body_text": "text-base leading-relaxed text-[#0B192C]",
+    "small_text": "text-sm text-[#475569]"
+  },
+  "layout_strategy": {
+    "overall_layout": "Grid-based 2-column layout on desktop: Left column (Main Analysis, spans 8 or 9 cols) and Right column (Context Sidebar, spans 4 or 3 cols). Mobile follows a stacked layout.",
+    "spacing": "Generous internal padding (p-6 or p-8) inside cards. Use gap-6 or gap-8 for grid layouts to let the dense text breathe.",
+    "borders_and_shadows": "Strictly sharp UI: rounded-none or rounded-sm maximum. No box-shadows. Rely entirely on 1px solid borders (border-[#E2E8F0]) for structural definition.",
+    "header_section": "Full-width top section. Contains Case Title (H1, Playfair), Type, Jurisdiction, Presiding Judge, and Status Badge. Followed immediately by the Stage Progress Bar.",
+    "hero_verdict": "Chief Justice Final Verdict Card must be extracted from the bottom and placed at the TOP of the Main Analysis column. Use inverted colors (bg-[#0B192C] text-white) with gold (#C5A059) accents for high contrast. This gives users the final answer immediately.",
+    "progressive_disclosure": {
+      "pipeline_tabs": "Use Shadcn Tabs to separate the deliberation stages (Tab 1: Individual Analyses, Tab 2: Cross-Review, Tab 3: Synthesis). This solves the vertical scroll fatigue.",
+      "council_cards": "Inside Tab 1, display the 4 Council Member Cards in a 2x2 grid. Use Shadcn Accordions inside these cards to hide verbose text (arguments, laws) by default.",
+      "context_sidebar": "Sticky right sidebar. Top module is Judge Intelligence Panel. Below it, use a Shadcn Accordion to group 'Case Facts', 'Relevant Laws', and 'Similar Cases'. This compresses massive amounts of text into a scannable format."
     }
-  },
-  "layout": {
-    "spacing_scale": "Generous spacing. Use p-6, p-8, p-12. Containers with borders MUST have internal padding p-6 or p-8.",
-    "grid_system": "Bento 'Control Room' Grid for the Analysis Dashboard. grid-cols-1 md:grid-cols-3 lg:grid-cols-4 with gap-4 or gap-6. Marketing pages use wide asymmetrical grids.",
-    "alignment": "Left-align dense content and data. Center-align hero headings only if it heavily improves balance."
-  },
-  "surfaces": {
-    "cards": "Flat background (bg-white), sharp edges or max rounded-sm, 1px solid border (border-slate-200). NO drop shadows by default. Adopt the 'Grid Borders' look.",
-    "header": "Crystal Glassmorphism: bg-white/80 backdrop-blur-xl border-b border-slate-200. Ensure it z-indexes above content properly.",
-    "modals": "Solid bg-white, border border-slate-200, sharp corners (rounded-sm), shadow-[0_8px_32px_rgba(0,0,0,0.12)]."
   },
   "components": {
-    "buttons": "Sharp corners (rounded-none or rounded-sm). Primary: bg-[#0B192C] text-white hover:bg-[#1E293B]. Secondary: border border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50.",
-    "inputs": "Shadcn defaults but force rounded-sm, bg-white, border-slate-300 focus:border-[#0B192C] focus:ring-1 focus:ring-[#0B192C].",
-    "tabs": "Used for LLM Council deliberation view. Bottom border indicator style rather than pill style to maintain a rigid, technical look.",
-    "charts": "Recharts or Shadcn chart components using objective monochrome colors plus the gold accent (#C5A059) for primary data highlights."
+    "tabs": "Shadcn Tabs: Customize with transparent list background, sharp corners, and a gold bottom border (border-b-2 border-[#C5A059]) for the active state indicator.",
+    "accordion": "Shadcn Accordion: Use for Analyst details in cards and the right sidebar contextual panels.",
+    "cards": "Use raw HTML divs or Shadcn Card stripped of all shadows. Use border border-[#E2E8F0] bg-white.",
+    "progress_bar": "Segmented pipeline visual or steps component indicating current stage, placed below the case header.",
+    "badges": "Sharp badges (rounded-none), uppercase tracking-wider, for status labels."
   },
-  "media": {
-    "images": [
-      {
-        "category": "hero_background",
-        "url": "https://static.prod-images.emergentagent.com/jobs/792d018e-2fe0-470c-ad76-99601295bfeb/images/906d4151d98a0e722d7ff156088308d3880e1d8e0770e55d7c337eb33aa7bf29.png",
-        "description": "Modern minimalist legal library. Use for the landing page hero section."
-      },
-      {
-        "category": "ai_council_abstract",
-        "url": "https://static.prod-images.emergentagent.com/jobs/792d018e-2fe0-470c-ad76-99601295bfeb/images/c3a254de8f526f322ea5847014a6a6b04b2dd7107e1729e586fef919dd0c996a.png",
-        "description": "Abstract AI nodes representing the LLM Council deliberation. Use in 'How it works' section or dashboard header backdrop."
-      },
-      {
-        "category": "justice_scales",
-        "url": "https://images.unsplash.com/photo-1768839719921-6a554fb3e847?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwyfHxsYXclMjBzY2FsZXMlMjBhYnN0cmFjdHxlbnwwfHx8fDE3NzYzMzY5NTh8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Statue of justice holding scales against blue background. Ideal for the About page or features section."
-      },
-      {
-        "category": "courthouse_architecture",
-        "url": "https://images.unsplash.com/photo-1557635919-8ece988c2b5b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBjb3VydGhvdXNlJTIwYXJjaGl0ZWN0dXJlfGVufDB8fHx8MTc3NjMzNjk1OHww&ixlib=rb-4.1.0&q=85",
-        "description": "Abstract modern blue/white courthouse building for background or texture."
-      }
-    ]
+  "motion_and_interactions": {
+    "hover_states": "Interactive cards should have a subtle border color transition to gold on hover (hover:border-[#C5A059] transition-colors duration-300).",
+    "tab_transitions": "Content inside tabs should fade in cleanly without aggressive motion."
+  },
+  "testing": {
+    "attributes": "All interactive elements (Tabs, Accordion triggers, Buttons, Links) MUST include data-testid attributes (e.g., data-testid='tab-stage-1', data-testid='accordion-case-facts')."
   },
   "instructions_to_main_agent": [
-    "Install and use 'Playfair Display' for all headings and 'IBM Plex Sans' for all body, cards, and data text.",
-    "Implement pure HTML/Tailwind for the Marketing/Landing page using wide bento layouts and generous spacing.",
-    "Use Shadcn UI components for the Analysis Dashboard, Case Submission, and Case History. Strip away default Vercal-like softness: use sharp corners (rounded-sm or rounded-none) and high-contrast borders (border-slate-200/300).",
-    "For the LLM Council view, use a Control Room grid. Each AI persona (Prosecution Analyst, Defense Analyst, Legal Scholar, Bias Detector, Chief Justice Synthesizer) must have distinct layout sections but uniform clinical styling.",
-    "All interactive elements and key text MUST include 'data-testid' attributes (e.g., data-testid='submit-case-button').",
-    "DO NOT use any placeholder images (via.placeholder.com, etc.). Use ONLY the image URLs provided in this JSON.",
-    "Maintain strict accessible contrast ratios, particularly for the Brand Navy (#0B192C) and Accent Gold (#C5A059) against white backgrounds.",
-    "Use lucide-react for all standard iconography, styled with thin or regular stroke weights."
+    "Install and setup required Shadcn components: tabs, accordion, card, badge.",
+    "Ensure fonts 'Playfair Display' and 'IBM Plex Sans' are imported correctly in CSS/HTML.",
+    "Refactor the monolithic scroll layout into a 2-column grid layout (Main Content Left, Context Sidebar Right).",
+    "Implement Shadcn Tabs to split the 4 stages of analysis into separate views. Tab 1 should show the 4 analyst cards in a grid.",
+    "Elevate the 'Chief Justice Final Verdict Card' to the top of the main column, styled as a high-contrast dark navy card.",
+    "Wrap 'Case Facts', 'Relevant Laws', and 'Similar Cases' inside a Shadcn Accordion in the right sidebar.",
+    "Strip all shadows and roundness from components. Enforce sharp edges (rounded-none or rounded-sm) and 1px borders.",
+    "Add 'data-testid' attributes to all interactive elements for testing."
   ]
 }
