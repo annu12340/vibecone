@@ -16,6 +16,7 @@ from ecourts_helper import transform_ecourts_to_unified_format
 from ecourts_api_client import ecourts_client
 from map import COURT_STATE_MAP
 from sarvam_service import sarvam_router
+from mock_cases import get_mocked_case
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -591,113 +592,23 @@ async def search_case_by_cnr(search_input: CaseSearchByCNR):
     """
     cnr = search_input.cnr.strip().upper()
     logger.info(f"Searching for case with CNR: {cnr}")
-    
-    # Special case: DLHC010127602024 - Return mocked data with 10s delay
-    # This is temporary to avoid API limits during testing
-    if cnr == "DLHC010127602024":
-        logger.info(f"Using mocked data for CNR: {cnr} (sleeping 10s to simulate API call)")
-        
-        # Sleep for 10 seconds to simulate API delay (async sleep)
-        await asyncio.sleep(10)
-        
-        # Mocked eCourts data
-        mocked_ecourts_data = {
-            "data": {
-                "courtCaseData": {
-                    "caseNumber": "202400000822024",
-                    "state": "DL",
-                    "stateCode": "26",
-                    "districtCode": "1",
-                    "causelistType": "COMPLETE CAUSE LIST",
-                    "courtName": "DLHC",
-                    "courtNo": 11584,
-                    "judicialSection": "APP",
-                    "judicialSectionRaw": "APPELLATE SIDE",
-                    "subordinateCourt": {
-                        "filingDate": "2024-01-02",
-                        "caseNumber": "- IL SUIT - 2152",
-                        "courtName": "PATIALA HOUSE COURTS, NEW DELHI"
-                    },
-                    "purpose": "FRESH MATTERS & APPLICATIONS",
-                    "stageOfCase": "UNKNOWN",
-                    "lastHearingDate": "2025-05-26",
-                    "interimOrders": [
-                        {"orderDate": "2024-03-13", "description": "View ORDER", "orderUrl": "order-1.pdf"},
-                        {"orderDate": "2024-05-02", "description": "View ORDER", "orderUrl": "order-2.pdf"},
-                        {"orderDate": "2024-05-30", "description": "View ORDER", "orderUrl": "order-3.pdf"},
-                        {"orderDate": "2024-09-09", "description": "View ORDER", "orderUrl": "order-4.pdf"},
-                        {"orderDate": "2025-01-14", "description": "View ORDER", "orderUrl": "order-5.pdf"},
-                        {"orderDate": "2025-05-26", "description": "View ORDER", "orderUrl": "order-6.pdf"}
-                    ],
-                    "cnr": "DLHC010127602024",
-                    "cnrCourtCode": "DLHC01",
-                    "courtComplexCode": "DLHC01",
-                    "cnrCaseNumber": "012760",
-                    "cnrYear": "2024",
-                    "caseType": "FA",
-                    "caseTypeRaw": "FAO",
-                    "caseStatus": "PENDING",
-                    "filingNumber": "629757/2024",
-                    "filingDate": "2024-03-07",
-                    "registrationNumber": "82/2024",
-                    "registrationDate": "2024-03-12",
-                    "firstHearingDate": "2024-03-13",
-                    "nextHearingDate": "2025-05-26",
-                    "caseDurationDays": 445,
-                    "judges": [{"name": "DHARMESH SHARMA"}],
-                    "petitioners": [{"name": "Hav Narender Singh"}],
-                    "petitionerAdvocates": [{"name": "RAKESH DAHIYA"}],
-                    "respondents": [{"name": "Indian Ex Services League through Its President"}],
-                    "respondentAdvocates": [],
-                    "actsAndSections": [
-                        "Civil Procedure Code, 1908 - Section 104",
-                        "Order 43 Rule 1"
-                    ],
-                    "hasOrders": True,
-                    "hasJudgments": False,
-                    "orderCount": 6,
-                    "iaCount": 2,
-                    "interlocutoryApplications": [
-                        {
-                            "regNo": "CM APPL./15218/2024 (15218 ) Classification :",
-                            "remark": "13-03-2024",
-                            "filedBy": "HAV NARENDER SINGH",
-                            "filingDate": "2024-03-12",
-                            "status": "Pending"
-                        },
-                        {
-                            "regNo": "CM APPL./15219/2024 (15219 ) Classification :",
-                            "remark": "13-03-2024",
-                            "filedBy": "HAV NARENDER SINGH",
-                            "filingDate": "2024-03-12",
-                            "status": "Pending"
-                        }
-                    ],
-                    "judgmentOrders": []
-                },
-                "entityInfo": {
-                    "cnr": "DLHC010127602024",
-                    "nextDateOfHearing": "2025-05-26T00:00:00Z",
-                    "dateModified": "2026-02-13T09:45:20.343999Z"
-                }
-            }
-        }
-        
-        # Transform mocked data to unified format
-        transformed_data = transform_ecourts_to_unified_format(mocked_ecourts_data)
-        
-        logger.info(f"Returning mocked data for CNR: {cnr}")
-        
+
+    # --- Mocked CNRs (for testing / demos when external APIs are unavailable) ---
+    mocked_raw = get_mocked_case(cnr)
+    if mocked_raw is not None:
+        logger.info(f"Using mocked data for CNR: {cnr} (short simulated delay)")
+        await asyncio.sleep(2)  # brief simulated latency
+        transformed_data = transform_ecourts_to_unified_format(mocked_raw)
         return {
             "success": True,
             "source": "ecourts_mocked",
-            "message": "Case data retrieved (mocked for testing - 10s delay applied)",
+            "message": "Case data retrieved (mocked for testing)",
             "data": transformed_data,
             "fallback_attempted": False,
             "cached": False,
-            "mocked": True
+            "mocked": True,
         }
-    
+
     # Step 1: Try eCourts cache first
     ecourts_data = None
     ecourts_error = None
@@ -777,7 +688,7 @@ async def search_case_by_cnr(search_input: CaseSearchByCNR):
     logger.info(f"eCourts data not available, falling back to Indian Kanoon for CNR: {cnr}")
     try:
         indian_kanoon_result = await search_indian_kanoon(IndianKanoonSearch(cnr=cnr))
-        
+
         if indian_kanoon_result.get("success"):
             logger.info(f"Successfully fetched case from Indian Kanoon: {cnr}")
             return {
@@ -789,27 +700,53 @@ async def search_case_by_cnr(search_input: CaseSearchByCNR):
                 "ecourts_note": "eCourts integration in progress"
             }
         else:
-            # Both failed
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "message": "Case not found in both eCourts and Indian Kanoon",
-                    "ecourts_note": "eCourts data not cached yet",
-                    "indian_kanoon_message": indian_kanoon_result.get("message")
-                }
-            )
-    except HTTPException:
-        raise
+            # Not found in either source — return structured 404 with success:false
+            return {
+                "success": False,
+                "source": None,
+                "message": f"We couldn't find CNR '{cnr}' in either eCourts or Indian Kanoon. Please double-check the CNR and try again.",
+                "data": None,
+                "fallback_attempted": True,
+            }
+    except HTTPException as he:
+        # Translate raw upstream errors (e.g. 403 quota-exhausted from Indian Kanoon)
+        # into a user-friendly message instead of a scary detail string.
+        raw_detail = he.detail if isinstance(he.detail, str) else str(he.detail)
+        is_auth_issue = (
+            he.status_code in (401, 403)
+            or "permission" in raw_detail.lower()
+            or "authentication" in raw_detail.lower()
+            or "credentials" in raw_detail.lower()
+        )
+        friendly = (
+            "Case lookup services are temporarily unavailable "
+            "(the external court-data API is rate-limited or requires renewed credentials). "
+            "Please try again in a few minutes, use a different CNR, or contact support."
+        ) if is_auth_issue else (
+            f"We couldn't retrieve case data for CNR '{cnr}' right now. Please try again later."
+        )
+        logger.warning(f"Indian Kanoon fallback upstream error ({he.status_code}): {raw_detail[:200]}")
+        return {
+            "success": False,
+            "source": None,
+            "message": friendly,
+            "data": None,
+            "fallback_attempted": True,
+            "upstream_status": he.status_code,
+        }
     except Exception as e:
         logger.error(f"Indian Kanoon fallback also failed: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail={
-                "message": "Both eCourts and Indian Kanoon searches failed",
-                "ecourts_note": "eCourts data not cached yet",
-                "indian_kanoon_error": str(e)
-            }
-        )
+        return {
+            "success": False,
+            "source": None,
+            "message": (
+                f"We couldn't retrieve case data for CNR '{cnr}' right now. "
+                "Please try again later or enter the case details manually."
+            ),
+            "data": None,
+            "fallback_attempted": True,
+            "internal_note": str(e)[:200],
+        }
 
 
 @api_router.post("/admin/ecourts/cache-case")

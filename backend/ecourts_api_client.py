@@ -13,21 +13,33 @@ logger = logging.getLogger(__name__)
 
 class ECourtsAPIClient:
     """Client for interacting with eCourts India API"""
-    
+
     def __init__(self):
-        # eCourts MCP-based integration
-        # We use MCP tools to fetch data and cache it
-        # The API client is disabled by default
-        self.base_url = os.environ.get('ECOURTS_API_URL', 'https://webapi.ecourtsindia.com')
-        self.api_key = os.environ.get('ECOURTS_API_KEY', '')
+        # Read env vars lazily to avoid module-import-vs-dotenv-ordering issues.
+        self.base_url_override = os.environ.get('ECOURTS_API_URL')
         self.timeout = 30
-        self.api_available = bool(self.api_key)
-        
-        if self.api_available:
-            logger.info("eCourts API Client initialized with API key")
-        else:
-            logger.warning("ECOURTS_API_KEY not set — eCourts API disabled, will fall back to Indian Kanoon")
-        
+        self._logged_init = False
+
+    # --- Lazy env reads (so changes to .env after load_dotenv are picked up) ---
+    @property
+    def base_url(self) -> str:
+        return self.base_url_override or os.environ.get('ECOURTS_API_URL', 'https://webapi.ecourtsindia.com')
+
+    @property
+    def api_key(self) -> str:
+        return os.environ.get('ECOURTS_API_KEY', '').strip()
+
+    @property
+    def api_available(self) -> bool:
+        available = bool(self.api_key)
+        if not self._logged_init:
+            if available:
+                logger.info("eCourts API Client initialized with API key")
+            else:
+                logger.warning("ECOURTS_API_KEY not set — eCourts API disabled, will fall back to Indian Kanoon")
+            self._logged_init = True
+        return available
+
     def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
         """Make HTTP request to eCourts API"""
         try:
@@ -35,11 +47,11 @@ class ECourtsAPIClient:
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             }
-            
+
             # Add API key to headers if available
             if self.api_key:
                 headers['Authorization'] = f'Bearer {self.api_key}'
-            
+
             url = f"{self.base_url}{endpoint}"
             logger.info(f"Making request to eCourts API: {url}")
             
