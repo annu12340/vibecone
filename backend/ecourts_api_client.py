@@ -15,12 +15,16 @@ class ECourtsAPIClient:
     """Client for interacting with eCourts India API"""
     
     def __init__(self):
-        # Official eCourts Web API base URL
+        # eCourts MCP-based integration
+        # We use MCP tools to fetch data and cache it
+        # The API client is disabled by default
         self.base_url = os.environ.get('ECOURTS_API_URL', 'https://webapi.ecourtsindia.com')
         self.api_key = os.environ.get('ECOURTS_API_KEY', '')
         self.timeout = 30
-        # API is available if we have a valid key
-        self.api_available = bool(self.api_key and self.api_key.startswith('eci_'))
+        # API is disabled - we use MCP tools for data fetching
+        self.api_available = False
+        
+        logger.info("eCourts API Client initialized in MCP mode (API disabled)")
         
     def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
         """Make HTTP request to eCourts API"""
