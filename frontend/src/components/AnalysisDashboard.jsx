@@ -844,15 +844,15 @@ export default function AnalysisDashboard() {
             </div>
             {/* Stage 2 Cross-Review */}
             <CrossReviewSection crossReviews={analysis?.cross_reviews} stage={stage} />
-            {/* Chief Justice */}
-            <ChiefJusticeCard chiefData={chiefData} />
-            {/* Judge Intelligence — full-width below verdict */}
+            {/* Judge Intelligence — above final verdict */}
             {analysis?.judge_profile_snapshot && (
               <JudgeIntelligencePanel
                 judgeSnapshot={analysis.judge_profile_snapshot}
                 stage={stage}
               />
             )}
+            {/* Chief Justice */}
+            <ChiefJusticeCard chiefData={chiefData} />
           </div>
 
           {/* Sidebar — 1 col */}
