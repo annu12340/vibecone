@@ -154,6 +154,80 @@ function OverviewTab({ judge }) {
         ))}
       </div>
 
+      {/* Enhanced Data - Summary Statistics */}
+      {judge.summary_stats && (
+        <div className="bg-[#C5A059] bg-opacity-5 border border-[#C5A059] border-opacity-30 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <p className="text-xs uppercase tracking-wider text-[#C5A059] font-bold">Enhanced Data</p>
+            <span className="text-[9px] px-2 py-0.5 bg-[#C5A059] text-white font-bold uppercase">
+              CSV Statistics
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white border border-slate-200 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">Unique Courts</p>
+              <p className="text-lg font-playfair font-bold text-slate-900">{judge.summary_stats.unique_courts}</p>
+            </div>
+            <div className="bg-white border border-slate-200 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">Caste Mention Rate</p>
+              <p className="text-lg font-playfair font-bold text-purple-700">
+                {(judge.summary_stats.caste_mention_rate * 100).toFixed(0)}%
+              </p>
+            </div>
+            <div className="bg-white border border-slate-200 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">Female Context</p>
+              <p className="text-lg font-playfair font-bold text-blue-700">
+                {(judge.summary_stats.female_context_rate * 100).toFixed(0)}%
+              </p>
+            </div>
+            <div className="bg-white border border-slate-200 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-400 mb-1">Allowed Rate</p>
+              <p className="text-lg font-playfair font-bold text-green-700">
+                {(judge.summary_stats.allowed_rate * 100).toFixed(0)}%
+              </p>
+            </div>
+          </div>
+
+          {/* Weekday distribution mini chart */}
+          <div className="mt-3 bg-white border border-slate-200 p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-400 mb-2">Case Distribution by Weekday</p>
+            <div className="flex items-end justify-between gap-1 h-20">
+              {Object.entries(judge.summary_stats.weekday_distribution).map(([day, count]) => {
+                const maxCount = Math.max(...Object.values(judge.summary_stats.weekday_distribution));
+                const heightPercent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                return (
+                  <div key={day} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="w-full flex items-end justify-center" style={{ height: '60px' }}>
+                      {count > 0 && (
+                        <div 
+                          className="w-full bg-[#C5A059] opacity-70 hover:opacity-100 transition-opacity"
+                          style={{ height: `${heightPercent}%` }}
+                          title={`${day}: ${count} cases`}
+                        />
+                      )}
+                    </div>
+                    <span className="text-[9px] text-slate-500 uppercase">{day.slice(0, 3)}</span>
+                    <span className="text-[10px] font-bold text-slate-700">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+            <div className="flex items-center gap-2 bg-white border border-slate-200 p-2">
+              <span className="text-slate-500">Age Mention Cases:</span>
+              <span className="font-bold text-slate-900">{judge.summary_stats.age_mention_cases}</span>
+            </div>
+            <div className="flex items-center gap-2 bg-white border border-slate-200 p-2">
+              <span className="text-slate-500">Dismissed Rate:</span>
+              <span className="font-bold text-slate-900">{(judge.summary_stats.dismissed_rate * 100).toFixed(0)}%</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bias score + Outlier Score */}
       <div className="grid md:grid-cols-2 gap-4">
         <div className="border border-slate-200 p-4">
@@ -774,6 +848,8 @@ function JudgeCard({ judge, onClick }) {
   const biasScore = judge.bias_score || 0;
   const biasColor = biasScore >= 67 ? "#991B1B" : biasScore >= 34 ? "#C5A059" : "#166534";
   const rc = judge.report_card || {};
+  const hasSummary = judge.summary_stats;
+  const isSummaryOnly = judge.is_summary_only;
 
   return (
     <div
@@ -781,44 +857,96 @@ function JudgeCard({ judge, onClick }) {
       onClick={() => onClick(judge)}
       data-testid={`judge-card-${judge.id}`}
     >
-      <div className="h-1 bg-[#0B192C] group-hover:bg-[#C5A059] transition-colors" />
+      <div className={`h-1 ${isSummaryOnly ? 'bg-[#C5A059]' : 'bg-[#0B192C]'} group-hover:bg-[#C5A059] transition-colors`} />
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
-          <div>
-            <h3 className="font-playfair text-lg text-slate-900 group-hover:text-[#0B192C]">{judge.name}</h3>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-playfair text-lg text-slate-900 group-hover:text-[#0B192C]">{judge.name}</h3>
+              {hasSummary && !isSummaryOnly && (
+                <span className="text-[9px] px-1.5 py-0.5 bg-[#C5A059] text-white font-bold uppercase">
+                  Enhanced
+                </span>
+              )}
+              {isSummaryOnly && (
+                <span className="text-[9px] px-1.5 py-0.5 bg-slate-400 text-white font-bold uppercase">
+                  Stats Only
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-500 mt-0.5">{judge.court}</p>
-            <p className="text-xs text-slate-400">{judge.jurisdiction} · {judge.location}</p>
+            {!isSummaryOnly && <p className="text-xs text-slate-400">{judge.jurisdiction} · {judge.location}</p>}
           </div>
-          <BiasRiskBadge risk={judge.bias_risk} />
+          {!isSummaryOnly && <BiasRiskBadge risk={judge.bias_risk} />}
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="text-center border border-slate-100 py-2">
-            <p className="font-playfair text-xl text-slate-900">{judge.total_cases?.toLocaleString()}</p>
-            <p className="text-xs text-slate-500">Total Cases</p>
+        {/* Stats row - different for summary-only judges */}
+        {isSummaryOnly && hasSummary ? (
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="text-center border border-slate-100 py-2">
+              <p className="font-playfair text-xl text-slate-900">{hasSummary.total_cases}</p>
+              <p className="text-xs text-slate-500">Cases</p>
+            </div>
+            <div className="text-center border border-slate-100 py-2">
+              <p className="font-playfair text-xl text-slate-900">{(hasSummary.caste_mention_rate * 100).toFixed(0)}%</p>
+              <p className="text-xs text-slate-500">Caste Rate</p>
+            </div>
+            <div className="text-center border border-slate-100 py-2">
+              <p className="font-playfair text-xl text-slate-900">{(hasSummary.allowed_rate * 100).toFixed(0)}%</p>
+              <p className="text-xs text-slate-500">Allowed</p>
+            </div>
           </div>
-          <div className="text-center border border-slate-100 py-2">
-            <p className="font-playfair text-xl text-slate-900">{judge.years_on_bench}</p>
-            <p className="text-xs text-slate-500">Years</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="text-center border border-slate-100 py-2">
+              <p className="font-playfair text-xl text-slate-900">{judge.total_cases?.toLocaleString()}</p>
+              <p className="text-xs text-slate-500">Total Cases</p>
+            </div>
+            <div className="text-center border border-slate-100 py-2">
+              <p className="font-playfair text-xl text-slate-900">{judge.years_on_bench}</p>
+              <p className="text-xs text-slate-500">Years</p>
+            </div>
+            <div className="text-center border border-slate-100 py-2">
+              <p className="font-playfair text-xl font-bold" style={{ color: biasColor }}>{biasScore}</p>
+              <p className="text-xs text-slate-500">Bias Score</p>
+            </div>
           </div>
-          <div className="text-center border border-slate-100 py-2">
-            <p className="font-playfair text-xl font-bold" style={{ color: biasColor }}>{biasScore}</p>
-            <p className="text-xs text-slate-500">Bias Score</p>
-          </div>
-        </div>
+        )}
 
-        {/* Bias gauge */}
-        <div className="mb-3">
-          <div className="flex justify-between text-xs text-slate-400 mb-1">
-            <span>Bias Indicator</span>
-            <span>{biasScore}/100</span>
+        {/* Summary stats badges (when available) */}
+        {hasSummary && !isSummaryOnly && (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {hasSummary.caste_mention_rate > 0.5 && (
+              <span className="text-[10px] px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 font-medium">
+                High Caste Mentions ({(hasSummary.caste_mention_rate * 100).toFixed(0)}%)
+              </span>
+            )}
+            {hasSummary.female_context_rate > 0.3 && (
+              <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+                Female Context ({(hasSummary.female_context_rate * 100).toFixed(0)}%)
+              </span>
+            )}
+            {hasSummary.allowed_rate > 0.6 && (
+              <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-700 border border-green-200 font-medium">
+                High Allowed Rate ({(hasSummary.allowed_rate * 100).toFixed(0)}%)
+              </span>
+            )}
           </div>
-          <div className="h-1.5 bg-slate-100 relative overflow-hidden">
-            <div className="absolute inset-0 bias-gauge" />
-            <div className="absolute top-0 h-full w-0.5 bg-[#0B192C]" style={{ left: `calc(${biasScore}% - 1px)` }} />
+        )}
+
+        {/* Bias gauge - only for detailed profiles */}
+        {!isSummaryOnly && (
+          <div className="mb-3">
+            <div className="flex justify-between text-xs text-slate-400 mb-1">
+              <span>Bias Indicator</span>
+              <span>{biasScore}/100</span>
+            </div>
+            <div className="h-1.5 bg-slate-100 relative overflow-hidden">
+              <div className="absolute inset-0 bias-gauge" />
+              <div className="absolute top-0 h-full w-0.5 bg-[#0B192C]" style={{ left: `calc(${biasScore}% - 1px)` }} />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Report card grades strip */}
         {rc.overall && (
@@ -849,7 +977,7 @@ function JudgeCard({ judge, onClick }) {
             ))}
           </span>
           <span className="flex items-center gap-1 text-[#0B192C] font-medium group-hover:text-[#C5A059] transition-colors">
-            View Profile <ChevronRight className="w-3 h-3" />
+            View {isSummaryOnly ? 'Stats' : 'Profile'} <ChevronRight className="w-3 h-3" />
           </span>
         </div>
       </div>
@@ -861,40 +989,78 @@ function JudgeCard({ judge, onClick }) {
 
 export default function JudgeProfiles() {
   const [judges, setJudges] = useState([]);
+  const [judgeSummaries, setJudgeSummaries] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
   const [riskFilter, setRiskFilter] = useState("all");
   const [selectedJudge, setSelectedJudge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState("detailed"); // "detailed" or "all"
 
   useEffect(() => {
-    axios
-      .get(`${API}/judges`)
-      .then((res) => {
-        setJudges(res.data);
-        setFiltered(res.data);
+    // Fetch both detailed judge profiles AND judge summaries
+    Promise.all([
+      axios.get(`${API}/judges`),
+      axios.get(`${API}/judge-summary?limit=200`)
+    ])
+      .then(([detailedRes, summaryRes]) => {
+        const detailedJudges = detailedRes.data;
+        const summaryJudges = summaryRes.data.judges;
+        
+        // Merge: If a judge exists in both, enhance detailed with summary stats
+        const mergedJudges = detailedJudges.map(judge => {
+          const summary = summaryJudges.find(s => 
+            s.judge_name.toLowerCase().includes(judge.name.toLowerCase()) ||
+            judge.name.toLowerCase().includes(s.judge_name.toLowerCase())
+          );
+          
+          return summary ? { ...judge, summary_stats: summary } : judge;
+        });
+        
+        // Add summary-only judges (those not in detailed profiles)
+        const detailedNames = detailedJudges.map(j => j.name.toLowerCase());
+        const summaryOnlyJudges = summaryJudges
+          .filter(s => !detailedNames.some(name => 
+            name.includes(s.judge_name.toLowerCase()) || 
+            s.judge_name.toLowerCase().includes(name)
+          ))
+          .map(s => ({
+            id: `summary-${s.judge_name.replace(/\s+/g, '-')}`,
+            name: s.judge_name,
+            court: `${s.unique_courts} court${s.unique_courts > 1 ? 's' : ''}`,
+            jurisdiction: "Summary Data",
+            total_cases: s.total_cases,
+            summary_stats: s,
+            is_summary_only: true
+          }));
+        
+        setJudges(mergedJudges);
+        setJudgeSummaries(summaryOnlyJudges);
+        setFiltered(viewMode === "detailed" ? mergedJudges : [...mergedJudges, ...summaryOnlyJudges]);
       })
       .catch(() => setError("Failed to load judge profiles"))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    let result = judges;
+    const allJudges = viewMode === "detailed" ? judges : [...judges, ...judgeSummaries];
+    let result = allJudges;
+    
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
         (j) =>
           j.name.toLowerCase().includes(q) ||
-          j.court.toLowerCase().includes(q) ||
-          j.jurisdiction.toLowerCase().includes(q)
+          (j.court && j.court.toLowerCase().includes(q)) ||
+          (j.jurisdiction && j.jurisdiction.toLowerCase().includes(q))
       );
     }
     if (riskFilter !== "all") {
       result = result.filter((j) => j.bias_risk === riskFilter);
     }
     setFiltered(result);
-  }, [search, riskFilter, judges]);
+  }, [search, riskFilter, judges, judgeSummaries, viewMode]);
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]" data-testid="judge-profiles-page">
@@ -914,33 +1080,64 @@ export default function JudgeProfiles() {
 
       {/* Filters */}
       <div className="bg-white border-b border-slate-200 px-4 py-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search judges by name, court, or jurisdiction..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-[#0B192C] focus:ring-1 focus:ring-[#0B192C]"
-              data-testid="judge-search-input"
-            />
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3 mb-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search judges by name, court, or jurisdiction..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 border border-slate-300 text-sm focus:outline-none focus:border-[#0B192C] focus:ring-1 focus:ring-[#0B192C]"
+                data-testid="judge-search-input"
+              />
+            </div>
+            <div className="flex gap-2">
+              {["all", "low", "medium", "high"].map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRiskFilter(r)}
+                  className={`px-3 py-2 text-xs font-medium uppercase border transition-colors ${
+                    riskFilter === r
+                      ? "bg-[#0B192C] text-white border-[#0B192C]"
+                      : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"
+                  }`}
+                  data-testid={`filter-${r}`}
+                >
+                  {r === "all" ? "All" : `${r} Risk`}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2">
-            {["all", "low", "medium", "high"].map((r) => (
+          
+          {/* View Mode Toggle */}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-4">
               <button
-                key={r}
-                onClick={() => setRiskFilter(r)}
-                className={`px-3 py-2 text-xs font-medium uppercase border transition-colors ${
-                  riskFilter === r
+                onClick={() => setViewMode("detailed")}
+                className={`px-4 py-1.5 border transition-colors ${
+                  viewMode === "detailed"
                     ? "bg-[#0B192C] text-white border-[#0B192C]"
                     : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"
                 }`}
-                data-testid={`filter-${r}`}
               >
-                {r === "all" ? "All" : `${r} Risk`}
+                Detailed Profiles ({judges.length})
               </button>
-            ))}
+              <button
+                onClick={() => setViewMode("all")}
+                className={`px-4 py-1.5 border transition-colors ${
+                  viewMode === "all"
+                    ? "bg-[#0B192C] text-white border-[#0B192C]"
+                    : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"
+                }`}
+              >
+                All Judges ({judges.length + judgeSummaries.length})
+              </button>
+            </div>
+            <span className="text-slate-500">
+              Showing {filtered.length} judge{filtered.length !== 1 ? 's' : ''}
+            </span>
           </div>
         </div>
       </div>
