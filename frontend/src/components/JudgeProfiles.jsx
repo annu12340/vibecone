@@ -87,7 +87,6 @@ function JudgeCard({ judge }) {
               {judge.location ? ` · ${judge.location}` : ""}
             </p>
           </div>
-          {judge.bias_risk && <BiasRiskBadge risk={judge.bias_risk} />}
         </div>
 
         {/* Primary stats row */}
