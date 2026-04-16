@@ -16,109 +16,75 @@ Build a legal system app for common users that:
 
 ### Frontend (React + Tailwind + Shadcn)
 - `App.js` — React Router (5 routes)
-- `components/Navbar.jsx` — Sticky nav header
+- `components/Navbar.jsx` — Sticky nav with glassmorphism
 - `components/LandingPage.jsx` — Hero, features, how-it-works, CTA
 - `components/CaseSubmission.jsx` — Case submission form with Judge dropdown
-- `components/AnalysisDashboard.jsx` — Tabbed LLM Council analysis view
-- `components/analysis/` — Extracted dashboard components (CouncilCard, CrossReviewSection, ChiefJusticeCard, JudgeIntelligencePanel, SidebarPanels, constants)
-- `components/JudgeProfiles.jsx` — Full tabbed judge modal with bias analytics
+- `components/AnalysisDashboard.jsx` — Tabbed analysis view with gradient header
+- `components/analysis/` — Extracted components:
+  - `CouncilCard.jsx` — Analyst cards with ambient shadows
+  - `CrossReviewSection.jsx` — Cross-review deliberation cards
+  - `ChiefJusticeCard.jsx` — Gradient verdict card
+  - `JudgeIntelligencePanel.jsx` — Judge bias intelligence display
+  - `SidebarPanels.jsx` — Accordion sidebar (Case Facts, Similar Cases, Laws)
+  - `constants.js` — Shared config/styles
+- `components/JudgeProfiles.jsx` — Tabbed judge modal with bias analytics
 - `components/CaseHistory.jsx` — Past cases management
 
-### LLM Council (Inspired by karpathy/llm-council)
-4 analysts run in parallel (Stage 1), cross-review (Stage 2), then Chief Justice synthesizes (Stage 3):
-1. **Counsel Maximus** — Prosecution Analyst
-2. **Counsel Veridicus** — Defense Analyst
-3. **Professor Lexis** — Legal Scholar (also generates similar cases + relevant laws)
-4. **Analyst Veritas** — Judicial Bias Analyst
-5. **The Council** — Chief Justice Synthesizer (final verdict)
+### Design System
+- **Background**: #FAF9F6 (warm off-white)
+- **Primary**: #0B192C (navy) with gradients to #12223A
+- **Accent**: #C5A059 (gold)
+- **Fonts**: Playfair Display (headings) + IBM Plex Sans (body)
+- **Surfaces**: Ambient shadows, soft borders (border-slate-200/60), glassmorphism navbar
+- **Archetype**: Jewel & Luxury / Premium Legal Authority
 
 ## What's Been Implemented
 
+### Color & Professional Polish (April 2026)
+- [x] Warmer global background (#F8F9FA → #FAF9F6) across all pages
+- [x] Gradient dashboard header (from-[#0A1428] via-[#0B192C] to-[#11233D]) with warm gold glow orb
+- [x] Refined stage stepper with rounded circles, glow on active state, softer connectors
+- [x] Polished tab bar with subtle shadows, warmer active background
+- [x] Ambient card shadows (shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)])
+- [x] Thicker accent bars (h-1 → h-1.5) on council cards
+- [x] Gradient Chief Justice card with warm glow overlay
+- [x] Gradient Judge Intelligence panel header
+- [x] Refined Navbar glassmorphism (bg-white/80, backdrop-blur-2xl, shadow-sm)
+- [x] Gradient CTA button in navbar
+- [x] Warmer text tones (slate-300 → slate-200) in dark cards
+
 ### Analysis Dashboard Redesign (April 2026)
-- [x] **Tabbed interface**: Replaced monolithic scroll with Shadcn Tabs (Council Analysis | Cross-Review | Final Verdict)
-- [x] **Stage stepper**: Visual 4-stage progress indicator (Analysis → Cross-Review → Synthesis → Complete) replacing the simple progress bar
-- [x] **Sidebar with accordion**: Case Facts, Similar Cases, Relevant Laws collapsed into expandable accordion panels
-- [x] **Smart Judge Intelligence positioning**: Shows in sticky sidebar on Analysis/Cross-Review tabs, moves to main content on Final Verdict tab
-- [x] **Auto-tab selection**: Automatically advances to the relevant tab as analysis progresses
-- [x] **Tab badges**: Counter badges (4/4, Ready) show completion status at a glance
-- [x] **Component extraction**: Broke ~900-line monolith into 6 focused component files under `analysis/` directory
-- [x] **More breathing room**: Increased padding, spacing, and visual hierarchy throughout
+- [x] Tabbed interface (Council Analysis | Cross-Review | Final Verdict)
+- [x] Stage stepper visualization
+- [x] Sidebar with accordion panels
+- [x] Smart Judge Intelligence positioning (sidebar vs main content)
+- [x] Auto-tab selection, tab badges
+- [x] Component extraction (~900 lines → 6 focused files)
 
-### Indian Data (Updated)
-- [x] 6 Indian SC/HC judge profiles: Chandrachud (15), Arun Mishra (81), Sanjiv Khanna (32), G.S. Patel (22), Hemant Gupta (74), Sudhanshu Dhulia (25)
-- [x] 15 Indian laws: IPC 302/376/420/498A, NDPS Act, Articles 14/21/22, CrPC 438/482, POCSO, Prevention of Corruption, DV Act, UAPA, IT Act
-- [x] LLM council prompts updated for Indian law (IPC, CrPC, SC precedents, caste/religion bias)
-- [x] Case submission: Indian case types (Criminal IPC, NDPS, POCSO, etc.), Indian courts, Caste/Community demographics
-- [x] Demographic bias analysis covers: General/Upper Caste, OBC, SC/ST, Muslim, Christian
-
-### UI Editorial Redesign
-- [x] Landing page hero: Pure editorial typography, mock "Council in Session" terminal panel
-- [x] Indian stats strip: 4.7 Cr pending cases, 76% undertrials, 21 Yrs avg wait, 1:50K judge ratio
-- [x] Council roster: Editorial table format — hover reveals dark background
-- [x] Capabilities section: Asymmetric bento grid layout
-- [x] How It Works: Numbered steps with oversized decorative numbers
-- [x] Judge Intelligence teaser section with live bias preview
-- [x] Font: Playfair Display + IBM Plex Sans, Navy #0B192C + Gold #C5A059
-
-### Core Features
-- [x] Landing page with hero, features grid, council overview, CTA
-- [x] Case submission form (title, type, jurisdiction, judge, charges, demographics)
-- [x] LLM Council analysis with 5 AI personas
-- [x] Real-time polling of analysis progress (2.5s interval)
-- [x] Analysis Dashboard — tabbed council view with stage progress
-- [x] Similar cases and relevant laws panels (generated by Legal Scholar)
-- [x] Chief Justice synthesis with outcome probabilities
-- [x] Judge Profiles page with 6 seeded profiles
-- [x] Case History page with status badges and filter
-- [x] Auto-seeding on startup (6 judges, 15 laws)
-
-### Deep Judge Bias Detection Feature
-- [x] Report Cards: Letter grades (A/B/C/D/F) for Overall + 5 dimensions
-- [x] Grade strip on cards
-- [x] Tabbed modal with 5 tabs: Overview, Report Card, Comparable Cases, Timeline, Temporal
-- [x] Report Card tab with per-dimension data
-- [x] Comparable Cases tab with color-coded outcomes
-- [x] Timeline tab with Recharts charts
-- [x] Temporal tab with Monday/Lunch/Election effects
-- [x] Outlier Score with peer comparison
-- [x] Mock data: 6 rich judge profiles seeded in MongoDB
-
-### Stage 2 Cross-Review Deliberation
-- [x] Cross-review system messages for each analyst
-- [x] 3-stage pipeline: Stage 1 → Stage 2 → Stage 3
-- [x] Cross-review UI visualization
-- [x] Updated Chief Justice prompt with cross-review data
-
-### Judge Profile Integration
-- [x] Judge dropdown on case submission form
-- [x] Profile snapshot stored with analysis
-- [x] Chief Justice receives judge profile for synthesis
-
-### Design
-- Light theme: white/slate backgrounds
-- Primary: #0B192C (navy), Accent: #C5A059 (gold)
-- Fonts: Playfair Display (headings) + IBM Plex Sans (body)
-- Swiss/high-contrast archetype with sharp borders
-- Grade color coding: A=green, B=light-green, C=amber, D=orange, F=red
+### Core Features (All Complete)
+- [x] Landing page with hero, features, council overview, CTA
+- [x] Case submission form with Judge dropdown
+- [x] 3-stage LLM Council analysis pipeline
+- [x] Cross-review deliberation (Stage 2)
+- [x] Judge profile integration into synthesis
+- [x] Deep judge bias detection (report cards, timelines, temporal patterns)
+- [x] Real-time analysis polling
+- [x] Case history management
+- [x] 6 Indian judge profiles, 15 Indian laws auto-seeded
 
 ## Prioritized Backlog
 
-### P0 (Critical for core flow)
-- [ ] Handle LLM analysis timeout gracefully on frontend (60s+ analysis polling — 502 risk)
+### P0
+- [ ] Handle LLM analysis timeout gracefully (502 risk)
 
-### P1 (Next phase features)
+### P1
 - [ ] PDF/document upload for case evidence
-- [ ] Authentication (save analyses to user account)
+- [ ] User authentication (save analyses to account)
 - [ ] Search/filter case history
 
-### P2 (Nice to have)
+### P2
 - [ ] Export analysis as PDF
 - [ ] Share analysis link
 - [ ] Compare two judges side-by-side
 - [ ] Legal chatbot powered by council
 - [ ] Dark mode
-
-## Next Action Items
-1. Fix LLM analysis timeout / graceful frontend error handling (P0)
-2. Add PDF document upload support
-3. Add user authentication for saved cases
