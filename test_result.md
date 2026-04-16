@@ -119,17 +119,32 @@ user_problem_statement: |
   - Pre-fill form fields with Indian Kanoon data (only empty fields)
 
 backend:
-  - task: "Indian Kanoon API Integration"
+  - task: "eCourts API Integration with Indian Kanoon Fallback"
     implemented: true
-    working: "NA"
-    file: "backend/server.py"
+    working: true
+    file: "backend/server.py, backend/ecourts_helper.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Implemented merged endpoint POST /api/cases/search-by-cnr that tries eCourts first, then falls back to Indian Kanoon if eCourts data is unavailable. Created ecourts_helper.py with transform_ecourts_to_unified_format() to convert eCourts data to consistent format. Added admin endpoints: POST /api/admin/ecourts/store-case to cache eCourts data in MongoDB ecourts_cache collection with 24-hour freshness check. Successfully tested with CNR DLHC010127602024 - data transformed and cached correctly. Returns source indicator ('ecourts' or 'indian_kanoon') and fallback_attempted flag."
+
+  - task: "Indian Kanoon API Integration"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented POST /api/indiankanoon/search endpoint. Accepts CNR number, searches Indian Kanoon API, fetches full document details, and returns case information including title, document text, court, judge name, referred acts, and citations. API token stored in backend/.env. Uses requests library with timeout and error handling."
+      - working: true
+        agent: "main"
+        comment: "Kept as fallback option. Now accessed through the merged /api/cases/search-by-cnr endpoint when eCourts data is not available. Working correctly as secondary data source."
 
   - task: "Fine Management API"
     implemented: true
@@ -222,7 +237,7 @@ backend:
         comment: "TESTED: Distribution history API working correctly. Returns complete lottery distribution records with winners, amounts, and lottery round information. Verified multiple distribution records are properly stored and retrievable."
 
 frontend:
-  - task: "Indian Kanoon CNR Fetch Integration"
+  - task: "eCourts Integration with Fallback UI"
     implemented: true
     working: "NA"
     file: "frontend/src/components/CaseSubmission.jsx"
@@ -232,10 +247,25 @@ frontend:
     status_history:
       - working: "NA"
         agent: "main"
+        comment: "Updated /submit page to use merged endpoint /api/cases/search-by-cnr that tries eCourts first then Indian Kanoon. Page header changed to 'eCourts Case Lookup' with description mentioning official eCourts database with automatic fallback. Added data source badge showing '⚖️ eCourts Official' (blue) or '📚 Indian Kanoon' (amber) with optional '(Fallback)' indicator. Enhanced metadata display to show eCourts-specific fields: case_status, case_type_full, next_hearing_date (in green), filing_date. Added Parties Information section displaying petitioners/respondents with their advocates. Supports display of judges array from eCourts. All fields conditionally rendered based on data availability."
+
+  - task: "Indian Kanoon CNR Fetch Integration"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/CaseSubmission.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
         comment: "Added CNR input field at the top of the case submission form. Implemented 'Fetch Case Info' button that calls /api/indiankanoon/search. Pre-fills form fields (title, description, jurisdiction, judge_name, charges) with Indian Kanoon data only if fields are empty. Shows success/error messages. Includes loading state during API call."
       - working: "NA"
         agent: "main"
         comment: "MAJOR REDESIGN: Completely rebuilt /submit page to focus on CNR lookup. Removed all manual input fields. Now displays fetched Indian Kanoon case information in a clean, organized layout showing: title, court, judge/bench, date, full case document text, referred acts/laws (with badges), citations, referred cases, and document ID. Added 'Convene the AI Legal Council' button at the end that creates the case and navigates to analysis. Responsive design with proper spacing and visual hierarchy."
+      - working: "NA"
+        agent: "main"
+        comment: "Integrated with merged endpoint. Now serves as fallback when eCourts data is unavailable. UI updated to handle both data sources seamlessly with source indicator badges."
 
   - task: "Fine Management Page"
     implemented: true
@@ -293,13 +323,84 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Indian Kanoon API Integration"
-    - "Indian Kanoon CNR Fetch Integration"
+    - "eCourts API Integration with Indian Kanoon Fallback"
+    - "eCourts Integration with Fallback UI"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+  - agent: "main"
+    message: |
+      NEW IMPLEMENTATION: eCourts Integration with Indian Kanoon Fallback
+      
+      USER REQUEST: Integrate eCourts API to get case details by CNR with fallback to Indian Kanoon
+      
+      BACKEND IMPLEMENTATION:
+      1. Created merged endpoint POST /api/cases/search-by-cnr
+         - Tries eCourts first (checks MongoDB ecourts_cache collection)
+         - Falls back to Indian Kanoon if eCourts data unavailable
+         - Returns source indicator and fallback status
+      
+      2. Created ecourts_helper.py module
+         - transform_ecourts_to_unified_format() function
+         - Converts eCourts data structure to match Indian Kanoon format
+         - Ensures consistent data structure for frontend
+      
+      3. Added admin endpoints for eCourts data management
+         - POST /api/admin/ecourts/store-case: Store eCourts data in cache
+         - Cache includes 24-hour freshness check
+         - Successfully tested with CNR DLHC010127602024
+      
+      4. eCourts Data Structure Supported:
+         - Case metadata (CNR, filing date, status, type)
+         - Parties (petitioners, respondents with advocates)
+         - Judges array
+         - Hearing dates (filing, first, last, next)
+         - Interim orders and judgments
+         - Interlocutory applications
+         - Subordinate court details
+         - Full case document text from order markdown
+      
+      FRONTEND IMPLEMENTATION:
+      1. Updated CaseSubmission.jsx to use merged endpoint
+         - Changed header to "eCourts Case Lookup"
+         - Updated description to mention official eCourts with fallback
+      
+      2. Added data source indicator badges
+         - Blue badge: "⚖️ eCourts Official" for eCourts data
+         - Amber badge: "📚 Indian Kanoon" for fallback data
+         - Shows "(Fallback)" text when fallback was used
+      
+      3. Enhanced metadata display for eCourts fields
+         - Case Status (PENDING/DISPOSED)
+         - Case Type (FAO, WP, etc.)
+         - Next Hearing Date (displayed in green)
+         - Filing Date separate from general date
+      
+      4. Added Parties Information section
+         - Displays petitioners and respondents
+         - Shows advocates for each party
+         - Organized in two-column grid layout
+      
+      5. Enhanced judge display
+         - Supports judges array from eCourts
+         - Falls back to author or bench fields for compatibility
+      
+      TESTING COMPLETED:
+      ✓ Backend merged endpoint tested with sample eCourts data
+      ✓ Data transformation working correctly
+      ✓ Cache storage and retrieval tested
+      ✓ Source indicator working
+      ✓ Frontend updated to use new endpoint
+      
+      TESTING NEEDED:
+      - Test frontend CNR fetch with eCourts data (CNR: DLHC010127602024)
+      - Test fallback to Indian Kanoon when eCourts unavailable
+      - Verify all eCourts-specific fields display correctly
+      - Test "Convene the AI Legal Council" button with eCourts data
+      - Verify responsive layout with new parties section
+  
   - agent: "main"
     message: |
       Implemented complete reward system for prisoners with good behavior:

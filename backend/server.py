@@ -9,9 +9,10 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict, BeforeValidator
 from typing import List, Optional, Dict, Any, Annotated
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import requests
+from ecourts_helper import transform_ecourts_to_unified_format
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -358,6 +359,164 @@ async def search_indian_kanoon(search_input: IndianKanoonSearch):
     except Exception as e:
         logger.error(f"Error searching Indian Kanoon: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+
+# --- eCourts + Indian Kanoon Merged Integration ---
+class CaseSearchByCNR(BaseModel):
+    cnr: str
+
+@api_router.post("/cases/search-by-cnr")
+async def search_case_by_cnr(search_input: CaseSearchByCNR):
+    """
+    Search for case by CNR using eCourts first, fallback to Indian Kanoon.
+    Returns comprehensive case details including latest order analysis.
+    """
+    cnr = search_input.cnr.strip().upper()
+    logger.info(f"Searching for case with CNR: {cnr}")
+    
+    # Try eCourts first - check if we have cached data
+    ecourts_data = None
+    ecourts_error = None
+    
+    try:
+        logger.info(f"Checking eCourts cache for CNR: {cnr}")
+        cached_case = await db.ecourts_cache.find_one({"cnr": cnr}, {"_id": 0})
+        
+        if cached_case:
+            logger.info(f"Found cached eCourts data for CNR: {cnr}")
+            # Check if cache is recent (less than 24 hours old)
+            cache_date = cached_case.get("cached_at")
+            if cache_date:
+                from datetime import datetime, timedelta
+                cache_time = datetime.fromisoformat(cache_date.replace('Z', '+00:00'))
+                if datetime.now(timezone.utc) - cache_time < timedelta(hours=24):
+                    ecourts_data = cached_case.get("data")
+                    logger.info(f"Using fresh cached eCourts data for CNR: {cnr}")
+        
+    except Exception as e:
+        ecourts_error = f"eCourts cache lookup error: {str(e)}"
+        logger.warning(f"eCourts cache lookup failed for CNR {cnr}: {ecourts_error}")
+    
+    # If eCourts succeeded, return the data
+    if ecourts_data:
+        return {
+            "success": True,
+            "source": "ecourts",
+            "message": "Case found successfully from eCourts",
+            "data": ecourts_data,
+            "fallback_attempted": False,
+            "cached": True
+        }
+    
+    # Fallback to Indian Kanoon
+    logger.info(f"eCourts data not available, falling back to Indian Kanoon for CNR: {cnr}")
+    try:
+        indian_kanoon_result = await search_indian_kanoon(IndianKanoonSearch(cnr=cnr))
+        
+        if indian_kanoon_result.get("success"):
+            logger.info(f"Successfully fetched case from Indian Kanoon: {cnr}")
+            return {
+                "success": True,
+                "source": "indian_kanoon",
+                "message": "Case found from Indian Kanoon (eCourts data not available)",
+                "data": indian_kanoon_result.get("data"),
+                "fallback_attempted": True,
+                "ecourts_note": "eCourts integration in progress"
+            }
+        else:
+            # Both failed
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "message": "Case not found in both eCourts and Indian Kanoon",
+                    "ecourts_note": "eCourts data not cached yet",
+                    "indian_kanoon_message": indian_kanoon_result.get("message")
+                }
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Indian Kanoon fallback also failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Both eCourts and Indian Kanoon searches failed",
+                "ecourts_note": "eCourts data not cached yet",
+                "indian_kanoon_error": str(e)
+            }
+        )
+
+
+@api_router.post("/admin/ecourts/cache-case")
+async def cache_ecourts_case(search_input: CaseSearchByCNR):
+    """
+    Admin endpoint to fetch and cache eCourts case data.
+    This endpoint should be called by the agent to populate eCourts data.
+    """
+    cnr = search_input.cnr.strip().upper()
+    logger.info(f"Admin request to cache eCourts data for CNR: {cnr}")
+    
+    # This endpoint expects the data to be provided by the agent
+    # For now, it returns a message indicating that data should be posted
+    return {
+        "success": False,
+        "message": "This endpoint should receive eCourts data from external source",
+        "cnr": cnr,
+        "instructions": "Use POST with 'data' field containing eCourts case information"
+    }
+
+
+@api_router.post("/admin/ecourts/store-case")
+async def store_ecourts_case_data(case_data: Dict[str, Any]):
+    """
+    Admin endpoint to store eCourts case data in cache.
+    Accepts full case data from eCourts and stores it for quick retrieval.
+    """
+    try:
+        # Extract CNR from the data
+        cnr = case_data.get("cnr") or case_data.get("data", {}).get("courtCaseData", {}).get("cnr")
+        
+        if not cnr:
+            raise HTTPException(status_code=400, detail="CNR is required in case data")
+        
+        cnr = cnr.strip().upper()
+        logger.info(f"Storing eCourts data for CNR: {cnr}")
+        
+        # Transform eCourts data to unified format
+        transformed_data = transform_ecourts_to_unified_format(case_data)
+        
+        # Create cache document
+        cache_doc = {
+            "cnr": cnr,
+            "data": transformed_data,
+            "cached_at": datetime.now(timezone.utc).isoformat(),
+            "source": "ecourts"
+        }
+        
+        # Upsert to cache collection
+        await db.ecourts_cache.update_one(
+            {"cnr": cnr},
+            {"$set": cache_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Successfully cached eCourts data for CNR: {cnr}")
+        
+        return {
+            "success": True,
+            "message": f"eCourts data cached successfully for CNR: {cnr}",
+            "cnr": cnr,
+            "data_preview": {
+                "title": transformed_data.get("title", ""),
+                "court": transformed_data.get("court", ""),
+                "status": transformed_data.get("case_status", ""),
+                "filing_date": transformed_data.get("filing_date", "")
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error storing eCourts data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error storing data: {str(e)}")
 
 
 @api_router.get("/judges")

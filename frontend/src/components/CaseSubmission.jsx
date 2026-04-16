@@ -25,7 +25,8 @@ export default function CaseSubmission() {
     setCnrLoading(true);
 
     try {
-      const { data } = await axios.post(`${API}/indiankanoon/search`, { cnr: cnr.trim() });
+      // Use the new merged endpoint that tries eCourts first, then Indian Kanoon
+      const { data } = await axios.post(`${API}/cases/search-by-cnr`, { cnr: cnr.trim() });
       
       if (!data.success) {
         setCnrError(data.message || "Case not found");
@@ -33,10 +34,17 @@ export default function CaseSubmission() {
         return;
       }
 
-      setCaseData(data.data);
+      // Add source indicator to the case data
+      const caseDataWithSource = {
+        ...data.data,
+        source: data.source,
+        fallback_attempted: data.fallback_attempted
+      };
+
+      setCaseData(caseDataWithSource);
       setCnrLoading(false);
     } catch (err) {
-      setCnrError(err.response?.data?.detail || "Failed to fetch case from Indian Kanoon");
+      setCnrError(err.response?.data?.detail?.message || err.response?.data?.detail || "Failed to fetch case information");
       setCnrLoading(false);
     }
   };
@@ -82,9 +90,9 @@ export default function CaseSubmission() {
       <div className="bg-[#0B192C] py-12 px-4">
         <div className="max-w-5xl mx-auto">
           <p className="text-xs tracking-[0.2em] uppercase text-[#C5A059] mb-2 font-medium">Case Analysis</p>
-          <h1 className="font-playfair text-4xl sm:text-5xl text-white mb-3">Indian Kanoon Case Lookup</h1>
+          <h1 className="font-playfair text-4xl sm:text-5xl text-white mb-3">eCourts Case Lookup</h1>
           <p className="text-slate-400 text-base max-w-2xl">
-            Enter the Case Number Reference (CNR) to fetch complete case details from Indian Kanoon database and submit for AI Legal Council analysis.
+            Enter the Case Number Reference (CNR) to fetch complete case details from eCourts (official Indian judiciary database) with automatic fallback to Indian Kanoon.
           </p>
         </div>
       </div>
@@ -149,12 +157,29 @@ export default function CaseSubmission() {
         {caseData && (
           <div className="space-y-6">
             {/* Success Banner */}
-            <div className="flex items-center gap-3 p-5 bg-green-50 border-2 border-green-500" data-testid="case-loaded">
-              <Award className="w-6 h-6 text-green-600" />
-              <div>
-                <p className="font-bold text-green-900">Case Information Retrieved Successfully</p>
-                <p className="text-sm text-green-700 mt-1">Review the details below and convene the AI Legal Council for analysis.</p>
+            <div className="flex items-center justify-between gap-3 p-5 bg-green-50 border-2 border-green-500" data-testid="case-loaded">
+              <div className="flex items-center gap-3">
+                <Award className="w-6 h-6 text-green-600" />
+                <div>
+                  <p className="font-bold text-green-900">Case Information Retrieved Successfully</p>
+                  <p className="text-sm text-green-700 mt-1">Review the details below and convene the AI Legal Council for analysis.</p>
+                </div>
               </div>
+              {/* Data Source Badge */}
+              {caseData.source && (
+                <div className="flex items-center gap-2">
+                  <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider border-2 ${
+                    caseData.source === 'ecourts' 
+                      ? 'bg-blue-50 border-blue-500 text-blue-700' 
+                      : 'bg-amber-50 border-amber-500 text-amber-700'
+                  }`}>
+                    {caseData.source === 'ecourts' ? '⚖️ eCourts Official' : '📚 Indian Kanoon'}
+                  </span>
+                  {caseData.fallback_attempted && (
+                    <span className="text-xs text-slate-500 italic">(Fallback)</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Case Title */}
@@ -177,28 +202,114 @@ export default function CaseSubmission() {
                 <p className="text-sm font-medium text-slate-900">{caseData.court || "Not specified"}</p>
               </div>
 
+              {/* Case Status (eCourts specific) */}
+              {caseData.case_status && (
+                <div className="bg-white border border-slate-200 p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Scale className="w-4 h-4 text-[#C5A059]" />
+                    <p className="text-xs tracking-widest uppercase text-slate-500 font-bold">Status</p>
+                  </div>
+                  <p className="text-sm font-medium text-slate-900">{caseData.case_status}</p>
+                </div>
+              )}
+
+              {/* Case Type (eCourts specific) */}
+              {caseData.case_type_full && (
+                <div className="bg-white border border-slate-200 p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-4 h-4 text-[#C5A059]" />
+                    <p className="text-xs tracking-widest uppercase text-slate-500 font-bold">Case Type</p>
+                  </div>
+                  <p className="text-sm font-medium text-slate-900">{caseData.case_type_full}</p>
+                </div>
+              )}
+
               {/* Judge/Bench */}
-              {(caseData.author || caseData.bench) && (
+              {(caseData.author || caseData.bench || caseData.judges?.length > 0) && (
                 <div className="bg-white border border-slate-200 p-5">
                   <div className="flex items-center gap-2 mb-2">
                     <User className="w-4 h-4 text-[#C5A059]" />
                     <p className="text-xs tracking-widest uppercase text-slate-500 font-bold">Judge / Bench</p>
                   </div>
-                  <p className="text-sm font-medium text-slate-900">{caseData.author || caseData.bench || "Not specified"}</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {caseData.judges?.join(', ') || caseData.author || caseData.bench || "Not specified"}
+                  </p>
                 </div>
               )}
 
-              {/* Date */}
-              {caseData.date && (
+              {/* Filing Date */}
+              {(caseData.filing_date || caseData.date) && (
                 <div className="bg-white border border-slate-200 p-5">
                   <div className="flex items-center gap-2 mb-2">
                     <Calendar className="w-4 h-4 text-[#C5A059]" />
-                    <p className="text-xs tracking-widest uppercase text-slate-500 font-bold">Date</p>
+                    <p className="text-xs tracking-widest uppercase text-slate-500 font-bold">Filing Date</p>
                   </div>
-                  <p className="text-sm font-medium text-slate-900">{caseData.date}</p>
+                  <p className="text-sm font-medium text-slate-900">{caseData.filing_date || caseData.date}</p>
+                </div>
+              )}
+
+              {/* Next Hearing Date (eCourts specific) */}
+              {caseData.next_hearing_date && (
+                <div className="bg-white border border-slate-200 p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="w-4 h-4 text-green-600" />
+                    <p className="text-xs tracking-widest uppercase text-slate-500 font-bold">Next Hearing</p>
+                  </div>
+                  <p className="text-sm font-medium text-green-700">{caseData.next_hearing_date}</p>
                 </div>
               )}
             </div>
+
+            {/* Parties Information (eCourts specific) */}
+            {(caseData.petitioners || caseData.respondents) && (
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Petitioners */}
+                {caseData.petitioners && caseData.petitioners.length > 0 && (
+                  <div className="bg-white border border-slate-200 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <User className="w-4 h-4 text-[#C5A059]" />
+                      <p className="text-xs tracking-widest uppercase text-slate-500 font-bold">Petitioner(s)</p>
+                    </div>
+                    <ul className="space-y-1">
+                      {caseData.petitioners.map((petitioner, idx) => (
+                        <li key={idx} className="text-sm text-slate-700">• {petitioner}</li>
+                      ))}
+                    </ul>
+                    {caseData.petitioner_advocates && caseData.petitioner_advocates.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-200">
+                        <p className="text-xs text-slate-500 mb-1">Advocate(s):</p>
+                        {caseData.petitioner_advocates.map((adv, idx) => (
+                          <p key={idx} className="text-xs text-slate-600 italic">{adv}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Respondents */}
+                {caseData.respondents && caseData.respondents.length > 0 && (
+                  <div className="bg-white border border-slate-200 p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <User className="w-4 h-4 text-[#C5A059]" />
+                      <p className="text-xs tracking-widest uppercase text-slate-500 font-bold">Respondent(s)</p>
+                    </div>
+                    <ul className="space-y-1">
+                      {caseData.respondents.map((respondent, idx) => (
+                        <li key={idx} className="text-sm text-slate-700">• {respondent}</li>
+                      ))}
+                    </ul>
+                    {caseData.respondent_advocates && caseData.respondent_advocates.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-slate-200">
+                        <p className="text-xs text-slate-500 mb-1">Advocate(s):</p>
+                        {caseData.respondent_advocates.map((adv, idx) => (
+                          <p key={idx} className="text-xs text-slate-600 italic">{adv}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Document Text */}
             {caseData.doc_text && (
