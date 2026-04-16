@@ -122,7 +122,7 @@ backend:
   - task: "eCourts API Integration with Indian Kanoon Fallback"
     implemented: true
     working: true
-    file: "backend/server.py, backend/ecourts_helper.py"
+    file: "backend/server.py, backend/ecourts_helper.py, backend/llm_council.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -130,6 +130,9 @@ backend:
       - working: true
         agent: "main"
         comment: "Implemented merged endpoint POST /api/cases/search-by-cnr that tries eCourts first, then falls back to Indian Kanoon if eCourts data is unavailable. Created ecourts_helper.py with transform_ecourts_to_unified_format() to convert eCourts data to consistent format. Added admin endpoints: POST /api/admin/ecourts/store-case to cache eCourts data in MongoDB ecourts_cache collection with 24-hour freshness check. Successfully tested with CNR DLHC010127602024 - data transformed and cached correctly. Returns source indicator ('ecourts' or 'indian_kanoon') and fallback_attempted flag."
+      - working: true
+        agent: "main"
+        comment: "ENHANCED LLM INTEGRATION: Updated Case model to accept ecourts_metadata field containing comprehensive case information. Enhanced build_case_prompt() in llm_council.py to include: Timeline (filing, registration, hearings, decision dates), Parties information (petitioners/respondents with advocates), Case progress (stage, order count, judicial section), Latest order AI analysis (summary, reasoning, ratio decidendi), Case AI analysis (summary, type, complexity, key issues), Subordinate court details. LLM Legal Council now receives complete eCourts context for comprehensive analysis."
 
   - task: "Indian Kanoon API Integration"
     implemented: true
@@ -251,6 +254,9 @@ frontend:
       - working: true
         agent: "main"
         comment: "MAJOR ENHANCEMENT: Added comprehensive data display including: 1) Case Timeline - Visual timeline with icons showing filing date, registration date, first hearing, last hearing, next hearing (animated), and decision date with gradient line connector. 2) Acts & Sections - Displays invoked legal provisions with left border highlight. 3) AI Case Analysis - Shows case summary, type, complexity (with colored badges), and key issues. 4) Latest Order AI Analysis - Displays executive summary, plain language summary, court reasoning, and ratio decidendi with confidence score. All sections conditionally rendered and styled for clear visual hierarchy."
+      - working: true
+        agent: "main"
+        comment: "ENHANCED LEGAL COUNCIL INTEGRATION: Updated handleConveneCouncil() to send comprehensive ecourts_metadata to backend including: CNR, case status/number, all timeline dates, parties with advocates, court details, order count, AI analysis summaries, and subordinate court info. This rich context is now available to the LLM Legal Council for comprehensive case analysis with full eCourts background information."
 
   - task: "Indian Kanoon CNR Fetch Integration"
     implemented: true

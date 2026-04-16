@@ -59,15 +59,51 @@ export default function CaseSubmission() {
     setCnrError(null);
 
     try {
-      // Create case with Indian Kanoon data
+      // Build comprehensive case payload with eCourts data
       const payload = {
         title: caseData.title || `Case: ${cnr}`,
         description: caseData.doc_text || "No description available",
-        case_type: "Criminal (IPC)", // Default, can be inferred from doc_text
+        case_type: caseData.case_type_full || caseData.case_type || "Unknown",
         jurisdiction: caseData.court || "Unknown",
-        judge_name: caseData.author || null,
-        charges: caseData.referred_acts?.slice(0, 5) || [],
+        judge_name: caseData.judges?.join(', ') || caseData.author || caseData.bench || null,
+        charges: caseData.acts_and_sections || caseData.referred_acts?.slice(0, 5) || [],
         defendant_demographics: null,
+        
+        // Additional eCourts metadata for enhanced analysis
+        ecourts_metadata: {
+          cnr: caseData.cnr || cnr,
+          source: caseData.source,
+          case_status: caseData.case_status,
+          case_number: caseData.registration_number || caseData.case_number,
+          filing_date: caseData.filing_date,
+          registration_date: caseData.registration_date,
+          first_hearing_date: caseData.first_hearing_date,
+          next_hearing_date: caseData.next_hearing_date,
+          last_hearing_date: caseData.last_hearing_date,
+          decision_date: caseData.decision_date,
+          
+          // Parties information
+          petitioners: caseData.petitioners || [],
+          respondents: caseData.respondents || [],
+          petitioner_advocates: caseData.petitioner_advocates || [],
+          respondent_advocates: caseData.respondent_advocates || [],
+          
+          // Case details
+          court_code: caseData.court_code,
+          judicial_section: caseData.judicial_section,
+          stage_of_case: caseData.stage_of_case,
+          order_count: caseData.order_count,
+          has_orders: caseData.has_orders,
+          interim_orders: caseData.interim_orders || [],
+          
+          // AI Analysis if available
+          case_ai_summary: caseData.case_ai_summary,
+          case_ai_analysis: caseData.case_ai_analysis,
+          latest_order_analysis: caseData.latest_order_analysis,
+          
+          // Subordinate court info
+          subordinate_court: caseData.subordinate_court,
+        }
       };
 
       const { data } = await axios.post(`${API}/cases`, payload);

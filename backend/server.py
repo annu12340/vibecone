@@ -47,6 +47,7 @@ class CaseCreate(BaseModel):
     judge_name: Optional[str] = None
     charges: List[str] = []
     defendant_demographics: Optional[Dict[str, str]] = None
+    ecourts_metadata: Optional[Dict[str, Any]] = None
 
 
 class Case(BaseModel):
@@ -59,6 +60,7 @@ class Case(BaseModel):
     judge_name: Optional[str] = None
     charges: List[str] = []
     defendant_demographics: Optional[Dict[str, str]] = None
+    ecourts_metadata: Optional[Dict[str, Any]] = None
     status: str = "pending"
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 

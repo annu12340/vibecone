@@ -187,19 +187,120 @@ def extract_json_from_response(text: str) -> dict:
 
 
 def build_case_prompt(case_data: dict) -> str:
+    """Build comprehensive case prompt including eCourts metadata"""
     charges = ", ".join(case_data.get("charges", [])) if case_data.get("charges") else "Not specified"
     demographics = case_data.get("defendant_demographics") or {}
     demo_str = ", ".join(f"{k}: {v}" for k, v in demographics.items()) if demographics else "Not provided"
-
-    return (
-        f"CASE TITLE: {case_data.get('title', 'Unknown')}\n"
-        f"CASE TYPE: {case_data.get('case_type', 'Unknown')}\n"
-        f"JURISDICTION: {case_data.get('jurisdiction', 'Unknown')}\n"
-        f"PRESIDING JUDGE: {case_data.get('judge_name', 'Unknown')}\n"
-        f"CHARGES: {charges}\n"
-        f"DEFENDANT DEMOGRAPHICS: {demo_str}\n\n"
-        f"CASE DESCRIPTION:\n{case_data.get('description', 'No description provided')}"
-    )
+    
+    # Extract eCourts metadata if available
+    ecourts = case_data.get("ecourts_metadata", {})
+    
+    # Build base case information
+    prompt_parts = [
+        f"CASE TITLE: {case_data.get('title', 'Unknown')}",
+        f"CASE TYPE: {case_data.get('case_type', 'Unknown')}",
+        f"JURISDICTION: {case_data.get('jurisdiction', 'Unknown')}",
+        f"PRESIDING JUDGE: {case_data.get('judge_name', 'Unknown')}",
+        f"CHARGES/LEGAL PROVISIONS: {charges}",
+        f"DEFENDANT DEMOGRAPHICS: {demo_str}",
+    ]
+    
+    # Add eCourts specific information if available
+    if ecourts:
+        prompt_parts.append("\n=== ECOURTS CASE DETAILS ===")
+        
+        if ecourts.get("cnr"):
+            prompt_parts.append(f"CNR: {ecourts['cnr']}")
+        
+        if ecourts.get("case_status"):
+            prompt_parts.append(f"CASE STATUS: {ecourts['case_status']}")
+        
+        if ecourts.get("case_number"):
+            prompt_parts.append(f"CASE NUMBER: {ecourts['case_number']}")
+        
+        # Timeline information
+        if any([ecourts.get("filing_date"), ecourts.get("registration_date"), 
+                ecourts.get("first_hearing_date"), ecourts.get("next_hearing_date")]):
+            prompt_parts.append("\nTIMELINE:")
+            if ecourts.get("filing_date"):
+                prompt_parts.append(f"  - Filed on: {ecourts['filing_date']}")
+            if ecourts.get("registration_date"):
+                prompt_parts.append(f"  - Registered on: {ecourts['registration_date']}")
+            if ecourts.get("first_hearing_date"):
+                prompt_parts.append(f"  - First hearing: {ecourts['first_hearing_date']}")
+            if ecourts.get("last_hearing_date"):
+                prompt_parts.append(f"  - Last hearing: {ecourts['last_hearing_date']}")
+            if ecourts.get("next_hearing_date"):
+                prompt_parts.append(f"  - Next hearing: {ecourts['next_hearing_date']}")
+            if ecourts.get("decision_date"):
+                prompt_parts.append(f"  - Decision date: {ecourts['decision_date']}")
+        
+        # Parties information
+        if ecourts.get("petitioners") or ecourts.get("respondents"):
+            prompt_parts.append("\nPARTIES:")
+            if ecourts.get("petitioners"):
+                petitioners_list = ", ".join(ecourts['petitioners'])
+                prompt_parts.append(f"  PETITIONER(S): {petitioners_list}")
+                if ecourts.get("petitioner_advocates"):
+                    advocates = ", ".join(ecourts['petitioner_advocates'])
+                    prompt_parts.append(f"    Represented by: {advocates}")
+            
+            if ecourts.get("respondents"):
+                respondents_list = ", ".join(ecourts['respondents'])
+                prompt_parts.append(f"  RESPONDENT(S): {respondents_list}")
+                if ecourts.get("respondent_advocates"):
+                    advocates = ", ".join(ecourts['respondent_advocates'])
+                    prompt_parts.append(f"    Represented by: {advocates}")
+        
+        # Case progress information
+        if ecourts.get("order_count") or ecourts.get("stage_of_case"):
+            prompt_parts.append("\nCASE PROGRESS:")
+            if ecourts.get("stage_of_case"):
+                prompt_parts.append(f"  Stage: {ecourts['stage_of_case']}")
+            if ecourts.get("order_count"):
+                prompt_parts.append(f"  Orders filed: {ecourts['order_count']}")
+            if ecourts.get("judicial_section"):
+                prompt_parts.append(f"  Judicial section: {ecourts['judicial_section']}")
+        
+        # Latest order summary if available
+        if ecourts.get("latest_order_analysis"):
+            order_analysis = ecourts['latest_order_analysis']
+            prompt_parts.append("\nLATEST ORDER ANALYSIS:")
+            if order_analysis.get("ai_generated_executive_summary"):
+                prompt_parts.append(f"  Executive Summary: {order_analysis['ai_generated_executive_summary']}")
+            if order_analysis.get("plain_language_summary_for_litigants_outcome_focused"):
+                prompt_parts.append(f"  Plain Language: {order_analysis['plain_language_summary_for_litigants_outcome_focused']}")
+            if order_analysis.get("court_reasoning_for_decision"):
+                prompt_parts.append(f"  Court Reasoning: {order_analysis['court_reasoning_for_decision']}")
+        
+        # Case AI analysis if available
+        if ecourts.get("case_ai_analysis"):
+            ai_analysis = ecourts['case_ai_analysis']
+            prompt_parts.append("\nCASE AI ANALYSIS:")
+            if ai_analysis.get("caseSummary"):
+                prompt_parts.append(f"  Summary: {ai_analysis['caseSummary']}")
+            if ai_analysis.get("caseType"):
+                prompt_parts.append(f"  Case Type: {ai_analysis['caseType']}")
+            if ai_analysis.get("complexity"):
+                prompt_parts.append(f"  Complexity: {ai_analysis['complexity']}")
+            if ai_analysis.get("keyIssues"):
+                issues = ", ".join(ai_analysis['keyIssues'])
+                prompt_parts.append(f"  Key Issues: {issues}")
+        
+        # Subordinate court information
+        if ecourts.get("subordinate_court"):
+            sub_court = ecourts['subordinate_court']
+            if sub_court.get("courtName"):
+                prompt_parts.append(f"\nSUBORDINATE COURT: {sub_court.get('courtName')}")
+                if sub_court.get("caseNumber"):
+                    prompt_parts.append(f"  Case Number: {sub_court.get('caseNumber')}")
+                if sub_court.get("filingDate"):
+                    prompt_parts.append(f"  Filed on: {sub_court.get('filingDate')}")
+    
+    # Add case description
+    prompt_parts.append(f"\nCASE DESCRIPTION:\n{case_data.get('description', 'No description provided')[:2000]}")
+    
+    return "\n".join(prompt_parts)
 
 
 CROSS_REVIEW_MESSAGES = {
