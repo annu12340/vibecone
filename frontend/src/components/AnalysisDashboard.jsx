@@ -1,10 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { Scale, ArrowLeft, AlertCircle, CheckCircle2, Clock, RefreshCw, BookOpen, Gavel, ExternalLink } from "lucide-react";
+import { Scale, ArrowLeft, AlertCircle, CheckCircle2, Clock, RefreshCw, BookOpen, Gavel, ExternalLink, Award, TrendingUp } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+const GRADE_STYLES = {
+  A: { color: "#166534", bg: "#DCFCE7", border: "#166534" },
+  B: { color: "#3F6212", bg: "#ECFCCB", border: "#3F6212" },
+  C: { color: "#92400E", bg: "#FEF3C7", border: "#92400E" },
+  D: { color: "#C2410C", bg: "#FFEDD5", border: "#C2410C" },
+  F: { color: "#991B1B", bg: "#FEE2E2", border: "#991B1B" },
+};
 
 const COUNCIL_CONFIG = {
   prosecution: { name: "Counsel Maximus", title: "Prosecution Analyst", color: "#991B1B", bg: "#FEF2F2" },
@@ -216,6 +224,155 @@ function CouncilCard({ memberId, memberData }) {
     </div>
   );
 }
+
+function JudgeIntelligencePanel({ judgeSnapshot, stage }) {
+  if (!judgeSnapshot) return null;
+
+  const rc = judgeSnapshot.report_card || {};
+  const os = judgeSnapshot.outlier_score;
+  const tp = judgeSnapshot.temporal_patterns || {};
+  const biasScore = judgeSnapshot.bias_score || 0;
+  const biasColor = biasScore >= 67 ? "#991B1B" : biasScore >= 34 ? "#C5A059" : "#166534";
+  const gs = GRADE_STYLES[rc.overall] || { color: "#64748B", bg: "#F1F5F9", border: "#64748B" };
+
+  return (
+    <div className="border border-[#C5A059]/30 overflow-hidden" data-testid="judge-intelligence-panel">
+      <div className="bg-[#0B192C] px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Award className="w-4 h-4 text-[#C5A059]" />
+          <p className="text-xs tracking-[0.15em] uppercase text-[#C5A059] font-medium">Judge Intelligence</p>
+        </div>
+        <Link
+          to="/judges"
+          className="text-xs text-slate-400 hover:text-[#C5A059] flex items-center gap-1 transition-colors"
+          data-testid="view-judge-profile-link"
+        >
+          Full Profile <ExternalLink className="w-3 h-3" />
+        </Link>
+      </div>
+
+      <div className="p-4 bg-white space-y-4">
+        {/* Name + Grade + Risk */}
+        <div className="flex items-start gap-3">
+          <div
+            className="text-2xl font-bold w-14 h-14 shrink-0 flex items-center justify-center border-2"
+            style={{ color: gs.color, backgroundColor: gs.bg, borderColor: gs.border }}
+          >
+            {rc.overall || "?"}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-playfair text-base text-slate-900 leading-tight">{judgeSnapshot.name}</p>
+            <p className="text-xs text-slate-500 mt-0.5">{judgeSnapshot.court}</p>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <span
+                className="text-xs font-bold px-1.5 py-0.5 uppercase border"
+                style={{
+                  color: biasColor,
+                  backgroundColor: biasColor + "15",
+                  borderColor: biasColor + "40",
+                }}
+              >
+                {judgeSnapshot.bias_risk} Risk
+              </span>
+              {os && (
+                <span className="text-xs text-slate-500">
+                  {os.direction === "above" ? "+" : ""}{os.score}pp vs peers
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bias score bar */}
+        <div>
+          <div className="flex justify-between text-xs text-slate-500 mb-1">
+            <span>Bias Score</span>
+            <span className="font-bold" style={{ color: biasColor }}>{biasScore}/100</span>
+          </div>
+          <div className="h-2 bg-slate-100 relative overflow-hidden">
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to right, #166534 33%, #C5A059 66%, #991B1B 100%)", opacity: 0.3 }} />
+            <div className="absolute top-0 h-full w-0.5 bg-[#0B192C]" style={{ left: `calc(${biasScore}% - 1px)` }} />
+          </div>
+        </div>
+
+        {/* Dimension grades strip */}
+        {Object.keys(rc).filter(k => k !== "overall").length > 0 && (
+          <div>
+            <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Report Card</p>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { key: "caste_religious", label: "Caste" },
+                { key: "gender", label: "Gender" },
+                { key: "socioeconomic", label: "Socio" },
+                { key: "recidivism", label: "Recid." },
+                { key: "geographic", label: "Geo" },
+              ].map(({ key, label }) => {
+                const g = rc[key];
+                if (!g) return null;
+                const s = GRADE_STYLES[g] || {};
+                return (
+                  <div key={key} className="text-center">
+                    <p className="text-xs text-slate-400 mb-0.5">{label}</p>
+                    <span
+                      className="text-xs font-bold w-7 h-7 inline-flex items-center justify-center border"
+                      style={{ color: s.color, backgroundColor: s.bg, borderColor: s.border }}
+                    >{g}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Key bias indicators */}
+        {judgeSnapshot.bias_indicators?.length > 0 && (
+          <div>
+            <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Key Indicators</p>
+            <ul className="space-y-1">
+              {judgeSnapshot.bias_indicators.slice(0, 3).map((ind, i) => (
+                <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+                  <span className="text-[#C5A059] shrink-0 font-bold mt-0.5">›</span>
+                  {ind}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Temporal risk callouts */}
+        {(tp.monday_effect || tp.lunch_effect) && (
+          <div className="bg-red-50 border border-red-100 p-3 space-y-1.5">
+            <p className="text-xs uppercase tracking-wider text-red-600 font-bold mb-1">Temporal Risk</p>
+            {tp.monday_effect && (
+              <p className="text-xs text-red-700 flex gap-1.5">
+                <span className="font-bold shrink-0">Mon.</span> {tp.monday_effect}
+              </p>
+            )}
+            {tp.lunch_effect && (
+              <p className="text-xs text-red-700 flex gap-1.5">
+                <span className="font-bold shrink-0">Post-lunch</span> {tp.lunch_effect}
+              </p>
+            )}
+            {tp.election_year_effect?.assessment && (
+              <p className="text-xs text-orange-700 flex gap-1.5">
+                <span className="font-bold shrink-0">Election</span> {tp.election_year_effect.assessment.slice(0, 80)}...
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Used in synthesis notice */}
+        {stage >= 3 && (
+          <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-100 p-2">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            This profile was given to the Chief Justice for final synthesis.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 function CrossReviewSection({ crossReviews, stage }) {
   const memberOrder = ["prosecution", "defense", "legal_scholar", "bias_detector"];
@@ -691,6 +848,11 @@ export default function AnalysisDashboard() {
 
           {/* Sidebar — 1 col */}
           <div className="space-y-4">
+            {/* Judge Intelligence Panel — shown whenever judge profile is available */}
+            <JudgeIntelligencePanel
+              judgeSnapshot={analysis?.judge_profile_snapshot}
+              stage={stage}
+            />
             <SimilarCasesPanel cases={analysis?.similar_cases} />
             <LawsPanel laws={analysis?.relevant_laws} />
 

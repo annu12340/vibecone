@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { AlertCircle, Plus, X, Scale, ChevronDown } from "lucide-react";
+import { AlertCircle, Plus, X, Scale, ChevronDown, Award } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -22,6 +22,14 @@ const JURISDICTIONS = [
   "District & Sessions Court", "Fast Track Court", "Other",
 ];
 
+const GRADE_STYLES = {
+  A: { color: "#166534", bg: "#DCFCE7" },
+  B: { color: "#3F6212", bg: "#ECFCCB" },
+  C: { color: "#92400E", bg: "#FEF3C7" },
+  D: { color: "#C2410C", bg: "#FFEDD5" },
+  F: { color: "#991B1B", bg: "#FEE2E2" },
+};
+
 export default function CaseSubmission() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -38,6 +46,19 @@ export default function CaseSubmission() {
   const [chargeInput, setChargeInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [judges, setJudges] = useState([]);
+  const [selectedJudgeProfile, setSelectedJudgeProfile] = useState(null);
+
+  useEffect(() => {
+    axios.get(`${API}/judges`).then((res) => setJudges(res.data)).catch(() => {});
+  }, []);
+
+  // When judge_name changes, look up profile
+  useEffect(() => {
+    if (!form.judge_name) { setSelectedJudgeProfile(null); return; }
+    const match = judges.find((j) => j.name === form.judge_name);
+    setSelectedJudgeProfile(match || null);
+  }, [form.judge_name, judges]);
 
   const handleChange = (e) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -165,17 +186,82 @@ export default function CaseSubmission() {
           {/* Judge Name */}
           <div className="bg-white border border-slate-200 p-6">
             <label className="block text-xs tracking-widest uppercase text-slate-500 font-semibold mb-2">
-              Presiding Judge <span className="text-slate-400">(optional — enables bias analysis)</span>
+              Presiding Judge <span className="text-slate-400">(optional — enables judge-specific bias analysis)</span>
             </label>
-            <input
-              type="text"
-              name="judge_name"
-              value={form.judge_name}
-              onChange={handleChange}
-              placeholder="e.g., Justice D.Y. Chandrachud"
-              className="w-full px-4 py-3 border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#0B192C] focus:ring-1 focus:ring-[#0B192C]"
-              data-testid="input-judge-name"
-            />
+            <div className="relative mb-3">
+              <select
+                name="judge_name"
+                value={form.judge_name}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-slate-300 text-sm text-slate-900 appearance-none bg-white focus:outline-none focus:border-[#0B192C] focus:ring-1 focus:ring-[#0B192C]"
+                data-testid="select-judge-name"
+              >
+                <option value="">Select presiding judge...</option>
+                {judges.map((j) => (
+                  <option key={j.id} value={j.name}>{j.name} — {j.court}</option>
+                ))}
+                <option value="Other / Not Listed">Other / Not Listed</option>
+              </select>
+              <ChevronDown className="absolute right-3 top-3.5 w-4 h-4 text-slate-400 pointer-events-none" />
+            </div>
+
+            {/* Profile found callout */}
+            {selectedJudgeProfile && (
+              <div className="border border-[#C5A059]/40 bg-[#0B192C] p-4 flex flex-col sm:flex-row sm:items-start gap-4" data-testid="judge-profile-found">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div
+                    className="text-2xl font-bold w-12 h-12 shrink-0 flex items-center justify-center border-2"
+                    style={{
+                      color: GRADE_STYLES[selectedJudgeProfile.report_card?.overall]?.color || "#C5A059",
+                      backgroundColor: GRADE_STYLES[selectedJudgeProfile.report_card?.overall]?.bg || "#FEF3C7",
+                      borderColor: GRADE_STYLES[selectedJudgeProfile.report_card?.overall]?.color || "#C5A059",
+                    }}
+                  >
+                    {selectedJudgeProfile.report_card?.overall || "?"}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <span className="text-xs text-[#C5A059] font-bold uppercase tracking-wider">Profile Found</span>
+                      <span
+                        className="text-xs font-bold px-1.5 py-0.5 uppercase"
+                        style={{
+                          color: selectedJudgeProfile.bias_risk === "high" ? "#FCA5A5" : selectedJudgeProfile.bias_risk === "medium" ? "#FCD34D" : "#86EFAC",
+                          backgroundColor: selectedJudgeProfile.bias_risk === "high" ? "#991B1B40" : selectedJudgeProfile.bias_risk === "medium" ? "#B4530940" : "#16653440",
+                          border: "1px solid currentColor",
+                        }}
+                      >
+                        {selectedJudgeProfile.bias_risk} Risk
+                      </span>
+                    </div>
+                    <p className="text-sm text-white font-medium">{selectedJudgeProfile.court}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{selectedJudgeProfile.bias_indicators?.[0]}</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 shrink-0">
+                  {["caste_religious", "gender", "socioeconomic"].map((dim) => {
+                    const g = selectedJudgeProfile.report_card?.[dim];
+                    if (!g) return null;
+                    const s = GRADE_STYLES[g] || {};
+                    const labels = { caste_religious: "Caste", gender: "Gender", socioeconomic: "Socio" };
+                    return (
+                      <div key={dim} className="text-center">
+                        <p className="text-xs text-slate-500 mb-1">{labels[dim]}</p>
+                        <span
+                          className="text-xs font-bold w-7 h-7 inline-flex items-center justify-center border"
+                          style={{ color: s.color, backgroundColor: s.bg, borderColor: s.color }}
+                        >{g}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {form.judge_name && !selectedJudgeProfile && form.judge_name !== "Other / Not Listed" && (
+              <p className="text-xs text-slate-400 mt-2">
+                No profile in database — analysis will proceed without judge-specific bias data.
+              </p>
+            )}
           </div>
 
           {/* Charges */}

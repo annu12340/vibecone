@@ -329,12 +329,26 @@ async def cross_review_member(member_id: str, case_data: dict, own_analysis: dic
         return {"cross_review_summary": f"Cross-review failed: {str(e)}", "error": str(e)}
 
 
-async def synthesize_chief_justice(case_data: dict, members_data: dict, cross_reviews: dict = None) -> dict:
-    """Run Chief Justice synthesis using Stage 1 analyses + Stage 2 cross-reviews."""
+async def synthesize_chief_justice(
+    case_data: dict,
+    members_data: dict,
+    cross_reviews: dict = None,
+    judge_profile: dict = None,
+) -> dict:
+    """Run Chief Justice synthesis using Stage 1 analyses + Stage 2 cross-reviews + judge profile."""
+    # Update system message to mention judge profile availability
+    has_judge = bool(judge_profile and judge_profile.get("name"))
+    system_msg = CHIEF_JUSTICE_CONFIG["system_message"]
+    if has_judge:
+        system_msg = system_msg.replace(
+            "You have received TWO rounds of deliberation:",
+            "You have received TWO rounds of deliberation AND the presiding judge's historical bias profile:"
+        )
+
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=f"legal-chief-{case_data.get('id', 'unknown')}",
-        system_message=CHIEF_JUSTICE_CONFIG["system_message"],
+        system_message=system_msg,
     ).with_model(LLM_PROVIDER, LLM_MODEL)
 
     member_labels = [
@@ -357,12 +371,36 @@ async def synthesize_chief_justice(case_data: dict, members_data: dict, cross_re
             if review:
                 stage2_text += f"\n\n=== {label} — Cross-Review ===\n{json.dumps(review, indent=2)}"
 
+    judge_text = ""
+    if has_judge:
+        judge_text = build_judge_profile_text(judge_profile)
+
     case_prompt = build_case_prompt(case_data)
+
+    extra_schema = ""
+    if has_judge:
+        extra_schema = (
+            ',\n'
+            '  "judge_bias_warning": "Specific warning about this judge\'s known bias patterns as they apply to THIS case and defendant demographics",\n'
+            '  "judge_temporal_risk": "Any temporal risk from this judge\'s patterns — Monday effect, post-lunch, election year — that should concern the defendant"'
+        )
+        _ = extra_schema  # used in judge_schema_note construction
+
+    # Update schema prompt to include judge fields
+    judge_schema_note = ""
+    if has_judge:
+        judge_schema_note = (
+            "\n\nIMPORTANT: You have the presiding judge's bias profile. Add two fields to your JSON:\n"
+            '"judge_bias_warning": A specific, actionable warning about this judge\'s known biases as they apply to this case\'s defendant demographics. Be direct and specific.\n'
+            '"judge_temporal_risk": Note any temporal factors (Monday harshness, post-lunch bail denial, election year effects) relevant to when hearings may occur.'
+        )
+
     message = (
-        f"CASE INFORMATION:\n{case_prompt}\n\n"
-        f"=== STAGE 1: INDIVIDUAL ANALYSES ==={stage1_text}\n\n"
+        f"CASE INFORMATION:\n{case_prompt}\n"
+        + (f"\n=== PRESIDING JUDGE HISTORICAL PROFILE ===\n{judge_text}\n" if judge_text else "")
+        + f"\n=== STAGE 1: INDIVIDUAL ANALYSES ==={stage1_text}\n\n"
         f"=== STAGE 2: CROSS-REVIEW DELIBERATIONS ==={stage2_text if stage2_text else chr(10) + '(Cross-review not available)'}\n\n"
-        "Please synthesize all stages into your final Council verdict."
+        f"Please synthesize all stages into your final Council verdict.{judge_schema_note}"
     )
 
     try:
@@ -375,3 +413,61 @@ async def synthesize_chief_justice(case_data: dict, members_data: dict, cross_re
             "error": str(e),
             "outcome_assessment": {"most_likely_outcome": "Unable to determine", "prosecution_wins_probability": 50, "defense_wins_probability": 50},
         }
+
+
+def build_judge_profile_text(profile: dict) -> str:
+    """Build a concise, structured judge profile summary for the Chief Justice prompt."""
+    lines = [
+        f"Judge: {profile.get('name', 'Unknown')}",
+        f"Court: {profile.get('court', 'Unknown')} | {profile.get('location', '')}",
+        f"Bias Score: {profile.get('bias_score', 'N/A')}/100 | Risk: {str(profile.get('bias_risk', 'unknown')).upper()}",
+        f"Years on Bench: {profile.get('years_on_bench', 'N/A')} | Total Cases Decided: {profile.get('total_cases', 'N/A')}",
+    ]
+
+    rc = profile.get("report_card", {})
+    if rc:
+        lines.append(
+            f"Report Card Grades — Overall: {rc.get('overall','?')} | "
+            f"Caste/Religious: {rc.get('caste_religious','?')} | Gender: {rc.get('gender','?')} | "
+            f"Socioeconomic: {rc.get('socioeconomic','?')} | Recidivism: {rc.get('recidivism','?')} | "
+            f"Geographic: {rc.get('geographic','?')}"
+        )
+
+    os_data = profile.get("outlier_score", {})
+    if os_data:
+        lines.append(
+            f"Outlier Score: {os_data.get('direction','?')} peers by {os_data.get('score','?')}pp | "
+            f"Conviction rate {os_data.get('this_judge_conviction_rate','?')}% vs peer avg {os_data.get('peer_avg','?')}% | "
+            f"{os_data.get('percentile','?')}th percentile"
+        )
+        if os_data.get("label"):
+            lines.append(f"  Assessment: {os_data['label']}")
+
+    indicators = profile.get("bias_indicators", [])
+    if indicators:
+        lines.append("Documented Bias Indicators:")
+        for ind in indicators[:4]:
+            lines.append(f"  - {ind}")
+
+    tp = profile.get("temporal_patterns", {})
+    if tp:
+        lines.append("Temporal Risk Patterns:")
+        if tp.get("monday_effect"):
+            lines.append(f"  - Monday Effect: {tp['monday_effect']}")
+        if tp.get("lunch_effect"):
+            lines.append(f"  - Lunch Effect (post-13:00): {tp['lunch_effect']}")
+        ee = tp.get("election_year_effect", {})
+        if ee and ee.get("assessment"):
+            lines.append(f"  - Election Year: {ee['assessment']}")
+        me = tp.get("media_effect", {})
+        if me and me.get("assessment"):
+            lines.append(f"  - Media/High-Profile Effect: {me['assessment']}")
+
+    cc = profile.get("comparable_cases", [])
+    if cc:
+        lines.append("Historical Pattern — Same Crime, Different Defendant Demographics:")
+        for c in cc[:3]:
+            obs = c.get("observation", "")[:150]
+            lines.append(f"  - [{c.get('year','?')}] {c.get('crime','?')} ({c.get('bias_type','?')} bias): {obs}")
+
+    return "\n".join(lines)

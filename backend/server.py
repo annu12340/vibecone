@@ -250,8 +250,45 @@ async def run_council_analysis(case_id: str, case_data: dict):
         )
         logger.info(f"Stage 2 cross-review complete for case {case_id} — starting Chief Justice synthesis")
 
-        # --- Stage 3: Chief Justice synthesis (uses Stage 1 + Stage 2) ---
-        synthesis = await synthesize_chief_justice(case_data, members_data, cross_reviews)
+        # --- Fetch judge profile before Stage 3 ---
+        judge_profile = None
+        judge_name = case_data.get("judge_name")
+        if judge_name:
+            name_parts = judge_name.replace("Justice", "").replace("justice", "").strip().split()
+            search_term = name_parts[-1] if name_parts else judge_name
+            judge_doc = await db.judges.find_one(
+                {"name": {"$regex": search_term, "$options": "i"}},
+                {"_id": 0},
+            )
+            if judge_doc:
+                judge_profile = judge_doc
+                logger.info(f"Judge profile found: {judge_doc['name']}")
+                # Store minimal snapshot in analysis doc for frontend display
+                snapshot = {
+                    "id": judge_doc.get("id"),
+                    "name": judge_doc.get("name"),
+                    "court": judge_doc.get("court"),
+                    "location": judge_doc.get("location"),
+                    "bias_score": judge_doc.get("bias_score"),
+                    "bias_risk": judge_doc.get("bias_risk"),
+                    "report_card": judge_doc.get("report_card", {}),
+                    "outlier_score": judge_doc.get("outlier_score"),
+                    "bias_indicators": judge_doc.get("bias_indicators", [])[:4],
+                    "temporal_patterns": {
+                        "monday_effect": judge_doc.get("temporal_patterns", {}).get("monday_effect"),
+                        "lunch_effect": judge_doc.get("temporal_patterns", {}).get("lunch_effect"),
+                        "election_year_effect": judge_doc.get("temporal_patterns", {}).get("election_year_effect"),
+                    } if judge_doc.get("temporal_patterns") else {},
+                }
+                await db.analyses.update_one(
+                    {"case_id": case_id},
+                    {"$set": {"judge_profile_snapshot": snapshot}},
+                )
+            else:
+                logger.info(f"No judge profile found for: {judge_name}")
+
+        # --- Stage 3: Chief Justice synthesis (uses Stage 1 + Stage 2 + judge profile) ---
+        synthesis = await synthesize_chief_justice(case_data, members_data, cross_reviews, judge_profile)
 
         await db.analyses.update_one(
             {"case_id": case_id},
