@@ -120,13 +120,22 @@ function SummaryStatsSection({ stats }) {
       {/* Key Numbers */}
       <div>
         <SectionTitle>Case Statistics</SectionTitle>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatBox label="Total Cases" value={stats.total_cases?.toLocaleString() || 0} />
           <StatBox label="Unique Courts" value={stats.unique_courts || 0} />
           <StatBox label="Allowed" value={`${(stats.allowed_rate * 100).toFixed(1)}%`} sub={`${stats.allowed_cases || 0} cases`} color="text-emerald-700" />
           <StatBox label="Dismissed" value={`${(stats.dismissed_rate * 100).toFixed(1)}%`} sub={`${stats.dismissed_cases || 0} cases`} color="text-red-700" />
-          <StatBox label="Other Outcomes" value={Math.max((stats.total_cases || 0) - (stats.allowed_cases || 0) - (stats.dismissed_cases || 0), 0)} />
+          <StatBox label="Other Outcomes" value={Math.max((stats.total_cases || 0) - (stats.allowed_cases || 0) - (stats.dismissed_cases || 0), 0)} sub="remaining cases" />
+          <StatBox label="Caste Mentions" value={stats.caste_mention_cases || 0} sub={`${(stats.caste_mention_rate * 100).toFixed(1)}% of total`} color={stats.caste_mention_rate > 0.5 ? "text-purple-700" : "text-slate-900"} />
         </div>
+      </div>
+
+      {/* Raw counts row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatBox label="Female Context" value={stats.female_context_cases || 0} sub={`${(stats.female_context_rate * 100).toFixed(1)}% rate`} color="text-sky-700" />
+        <StatBox label="Male Context" value={stats.male_context_cases || 0} sub={`${(stats.male_context_rate * 100).toFixed(1)}% rate`} color="text-indigo-700" />
+        <StatBox label="Age Mentions" value={stats.age_mention_cases || 0} sub={`${(stats.age_mention_rate * 100).toFixed(1)}% rate`} color="text-amber-700" />
+        <StatBox label="Data Source" value={stats.source || "CSV"} sub={stats.imported_at ? `Imported ${new Date(stats.imported_at).toLocaleDateString()}` : ""} />
       </div>
 
       {/* Case Outcomes + Weekday Distribution side by side */}
@@ -375,28 +384,58 @@ function BiasAnalysisSection({ judge }) {
         </div>
       )}
 
-      {/* Demographic conviction chart */}
+      {/* Demographic conviction chart + sentence data */}
       {judge.demographic_patterns && Object.keys(judge.demographic_patterns).length > 0 && (
         <div className="bg-white border border-slate-200 p-5 rounded-sm">
-          <p className="text-xs uppercase tracking-wider text-slate-400 mb-4 font-medium">Conviction Rate by Defendant Community</p>
-          <ResponsiveContainer width="100%" height={150}>
-            <BarChart
-              data={Object.entries(judge.demographic_patterns).map(([key, data]) => ({
-                name: key === "general_upper_caste" ? "General/UC" : key === "obc" ? "OBC" : key === "sc_st" ? "SC/ST" : key === "minority" ? "Minority" : key,
-                rate: data.conviction_rate || 0,
-              }))}
-              margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
-            >
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
-              <Tooltip formatter={(v) => `${v}%`} />
-              <Bar dataKey="rate" radius={[3, 3, 0, 0]}>
-                {Object.values(judge.demographic_patterns).map((d, i) => (
-                  <Cell key={`dem-${i}`} fill={d.conviction_rate >= 85 ? "#991B1B" : d.conviction_rate >= 70 ? "#C5A059" : "#166534"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <p className="text-xs uppercase tracking-wider text-slate-400 mb-4 font-medium">Conviction Rate & Avg Sentence by Defendant Community</p>
+          <div className="grid lg:grid-cols-2 gap-6">
+            <ResponsiveContainer width="100%" height={150}>
+              <BarChart
+                data={Object.entries(judge.demographic_patterns).map(([key, data]) => ({
+                  name: key === "general_upper_caste" ? "General/UC" : key === "obc" ? "OBC" : key === "sc_st" ? "SC/ST" : key === "minority" ? "Minority" : key,
+                  rate: data.conviction_rate || 0,
+                  sentence: data.avg_sentence_months || 0,
+                }))}
+                margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+              >
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
+                <Tooltip formatter={(v, name) => name === "rate" ? `${v}%` : `${v} months`} />
+                <Bar dataKey="rate" name="Conviction %" radius={[3, 3, 0, 0]}>
+                  {Object.values(judge.demographic_patterns).map((d, i) => (
+                    <Cell key={`dem-${i}`} fill={d.conviction_rate >= 85 ? "#991B1B" : d.conviction_rate >= 70 ? "#C5A059" : "#166534"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            {/* Sentence table */}
+            <div className="border border-slate-200 rounded-sm overflow-hidden">
+              <table className="w-full text-sm" data-testid="demographic-table">
+                <thead>
+                  <tr className="bg-[#0B192C]">
+                    <th className="text-left px-3 py-2 text-xs uppercase text-slate-300 font-medium">Community</th>
+                    <th className="text-center px-3 py-2 text-xs uppercase text-slate-300 font-medium">Conviction</th>
+                    <th className="text-center px-3 py-2 text-xs uppercase text-slate-300 font-medium">Avg Sentence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(judge.demographic_patterns).map(([key, data], i) => (
+                    <tr key={key} className={i % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                      <td className="px-3 py-2 text-xs font-medium text-slate-700">
+                        {key === "general_upper_caste" ? "General/Upper Caste" : key === "obc" ? "OBC" : key === "sc_st" ? "SC/ST" : key === "minority" ? "Minority" : key}
+                      </td>
+                      <td className="px-3 py-2 text-center text-xs font-bold" style={{ color: data.conviction_rate >= 85 ? "#991B1B" : "#166534" }}>
+                        {data.conviction_rate}%
+                      </td>
+                      <td className="px-3 py-2 text-center text-xs font-bold text-slate-900">
+                        {data.avg_sentence_months} mo
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -683,6 +722,10 @@ export default function JudgeDetailPage() {
 
   const isDetailed = !judge.is_summary_only;
   const stats = judge.summary_stats;
+  const rb = judge.ruling_breakdown;
+  const os = judge.outlier_score;
+  const biasScore = judge.bias_score;
+  const biasColor = biasScore >= 67 ? "#991B1B" : biasScore >= 34 ? "#C5A059" : "#166534";
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]" data-testid="judge-detail-page">
@@ -693,7 +736,7 @@ export default function JudgeDetailPage() {
           <button onClick={() => navigate("/judges")} className="p-2 text-white hover:text-[#C5A059] transition-colors" data-testid="back-to-judges-btn">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="font-playfair text-xl sm:text-2xl text-white tracking-tight">{judge.name}</h1>
             <p className="text-slate-400 text-sm mt-0.5">
               {judge.court}
@@ -701,11 +744,65 @@ export default function JudgeDetailPage() {
               {judge.location ? ` · ${judge.location}` : ""}
             </p>
           </div>
+          {/* Quick bias badge in header for detailed judges */}
+          {judge.bias_risk && (
+            <span className="hidden sm:inline-flex text-xs font-bold uppercase px-2 py-1 border whitespace-nowrap" style={{ color: biasColor, borderColor: biasColor + "40", backgroundColor: biasColor + "15" }} data-testid="header-bias-badge">
+              {judge.bias_risk} risk
+            </span>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
+
+        {/* Key Stats Hero — for detailed judges */}
+        {isDetailed && (
+          <div className="bg-white border border-slate-200 rounded-sm p-5" data-testid="key-stats-hero">
+            <SectionTitle>Key Statistics</SectionTitle>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatBox label="Total Cases" value={judge.total_cases?.toLocaleString()} />
+              <StatBox label="Years on Bench" value={judge.years_on_bench} />
+              {rb && <StatBox label="Prosecution Win" value={`${rb.prosecution_win_pct}%`} color="text-red-700" />}
+              {rb && <StatBox label="Defense Win" value={`${rb.defense_win_pct}%`} color="text-blue-700" />}
+              {rb && <StatBox label="Appeals Reversed" value={`${rb.appeals_reversed_pct}%`} color="text-amber-700" />}
+              {biasScore != null && (
+                <StatBox label="Bias Score" value={`${biasScore}/100`} sub={judge.bias_risk} color={`${biasScore >= 67 ? "text-red-700" : biasScore >= 34 ? "text-amber-600" : "text-emerald-700"}`} />
+              )}
+            </div>
+            {/* Outlier + report card row */}
+            {(os || judge.report_card) && (
+              <div className="mt-4 flex flex-wrap items-center gap-4">
+                {os && (
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-sm" data-testid="hero-outlier">
+                    <span className="text-xs text-slate-500">Outlier:</span>
+                    <span className="text-sm font-bold" style={{ color: os.direction === "above" ? "#991B1B" : "#166534" }}>
+                      {os.direction === "above" ? "+" : ""}{os.score}pp
+                    </span>
+                    <span className="text-[10px] text-slate-400">({os.percentile}th pct)</span>
+                    <span className="text-[10px] text-slate-500 hidden md:inline">— {os.label}</span>
+                  </div>
+                )}
+                {judge.report_card && (
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-sm" data-testid="hero-report-card">
+                    <span className="text-xs text-slate-500">Report Card:</span>
+                    {["overall", "caste_religious", "gender", "socioeconomic", "recidivism", "geographic"].map((dim) => {
+                      const g = judge.report_card[dim];
+                      if (!g) return null;
+                      const gs = GRADE_STYLES[g] || {};
+                      return (
+                        <span key={dim} className="text-[10px] font-bold w-5 h-5 inline-flex items-center justify-center border" style={{ color: gs.color, backgroundColor: gs.bg, borderColor: gs.border }} title={dim.replace("_", "/")}>
+                          {g}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Summary stats (from CSV) */}
         {stats && <SummaryStatsSection stats={stats} />}
 
@@ -713,7 +810,7 @@ export default function JudgeDetailPage() {
         {isDetailed && (
           <>
             {(judge.bio_summary || judge.education || judge.years_on_bench) && <BiographySection judge={judge} />}
-            <RulingBreakdownSection rb={judge.ruling_breakdown} />
+            <RulingBreakdownSection rb={rb} />
             <BiasAnalysisSection judge={judge} />
             <ComparableCasesSection cases={judge.comparable_cases} />
             <TimelineSection timeline={judge.timeline} />

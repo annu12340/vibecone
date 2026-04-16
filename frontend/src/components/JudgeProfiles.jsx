@@ -36,12 +36,36 @@ function RatePill({ label, value, cls }) {
   );
 }
 
+function BiasRiskBadge({ risk }) {
+  const C = { low: "#166534", medium: "#C5A059", high: "#991B1B" };
+  const color = C[risk] || "#64748B";
+  return (
+    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 border whitespace-nowrap" style={{ color, borderColor: color + "40", backgroundColor: color + "15" }}>
+      {risk} risk
+    </span>
+  );
+}
+
+function GradeBadgeSm({ grade }) {
+  if (!grade) return null;
+  const STYLES = { A: { c: "#166534", bg: "#DCFCE7" }, B: { c: "#3F6212", bg: "#ECFCCB" }, C: { c: "#92400E", bg: "#FEF3C7" }, D: { c: "#C2410C", bg: "#FFEDD5" }, F: { c: "#991B1B", bg: "#FEE2E2" } };
+  const s = STYLES[grade] || { c: "#64748B", bg: "#F1F5F9" };
+  return (
+    <span className="text-[10px] font-bold w-5 h-5 inline-flex items-center justify-center border" style={{ color: s.c, backgroundColor: s.bg, borderColor: s.c }}>
+      {grade}
+    </span>
+  );
+}
+
 function JudgeCard({ judge }) {
   const navigate = useNavigate();
   const s = judge.summary_stats;
   const hasSummary = !!s;
   const totalCases = (s?.total_cases || judge.total_cases || 0);
   const rb = judge.ruling_breakdown;
+  const rc = judge.report_card;
+  const biasScore = judge.bias_score;
+  const os = judge.outlier_score;
 
   return (
     <div
@@ -51,19 +75,22 @@ function JudgeCard({ judge }) {
     >
       <div className="h-1 bg-[#0B192C] group-hover:bg-[#C5A059] transition-colors" />
       <div className="p-4">
-        {/* Name + court */}
-        <div className="mb-3">
-          <h3 className="font-playfair text-base text-slate-900 group-hover:text-[#0B192C] leading-tight">
-            {judge.name}
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {judge.court}
-            {s?.unique_courts && s.unique_courts > 1 ? ` · ${s.unique_courts} courts` : ""}
-            {judge.location ? ` · ${judge.location}` : ""}
-          </p>
+        {/* Name + court + risk badge */}
+        <div className="flex items-start justify-between mb-3 gap-2">
+          <div className="min-w-0">
+            <h3 className="font-playfair text-base text-slate-900 group-hover:text-[#0B192C] leading-tight">
+              {judge.name}
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5 truncate">
+              {judge.court}
+              {s?.unique_courts && s.unique_courts > 1 ? ` · ${s.unique_courts} courts` : ""}
+              {judge.location ? ` · ${judge.location}` : ""}
+            </p>
+          </div>
+          {judge.bias_risk && <BiasRiskBadge risk={judge.bias_risk} />}
         </div>
 
-        {/* Stats row — adapt to data available */}
+        {/* Primary stats row */}
         {hasSummary ? (
           <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="text-center border border-slate-100 py-1.5 rounded-sm">
@@ -73,10 +100,12 @@ function JudgeCard({ judge }) {
             <div className="text-center border border-slate-100 py-1.5 rounded-sm">
               <p className="font-playfair text-lg font-semibold text-emerald-700">{(s.allowed_rate * 100).toFixed(0)}%</p>
               <p className="text-[10px] text-slate-400 uppercase tracking-wide">Allowed</p>
+              <p className="text-[9px] text-slate-400">{s.allowed_cases} of {s.total_cases}</p>
             </div>
             <div className="text-center border border-slate-100 py-1.5 rounded-sm">
               <p className="font-playfair text-lg font-semibold text-red-700">{(s.dismissed_rate * 100).toFixed(0)}%</p>
               <p className="text-[10px] text-slate-400 uppercase tracking-wide">Dismissed</p>
+              <p className="text-[9px] text-slate-400">{s.dismissed_cases} of {s.total_cases}</p>
             </div>
           </div>
         ) : rb ? (
@@ -103,6 +132,32 @@ function JudgeCard({ judge }) {
           </div>
         )}
 
+        {/* Bias score + report card for detailed judges */}
+        {biasScore != null && rc && (
+          <div className="flex items-center gap-3 mb-3 px-1">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-slate-400">Bias:</span>
+              <span className="text-sm font-bold" style={{ color: biasScore >= 67 ? "#991B1B" : biasScore >= 34 ? "#C5A059" : "#166534" }}>
+                {biasScore}
+              </span>
+            </div>
+            {os && (
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-slate-400">Outlier:</span>
+                <span className="text-sm font-bold" style={{ color: os.direction === "above" ? "#991B1B" : "#166534" }}>
+                  {os.direction === "above" ? "+" : ""}{os.score}pp
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-0.5 ml-auto">
+              <span className="text-[10px] text-slate-400 mr-1">Grade:</span>
+              {["overall", "caste_religious", "gender", "socioeconomic", "recidivism", "geographic"].map((dim) => (
+                <GradeBadgeSm key={dim} grade={rc[dim]} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Context badges (summary stats) */}
         {hasSummary && (
           <div className="flex flex-wrap gap-1 mb-3">
@@ -113,12 +168,22 @@ function JudgeCard({ judge }) {
           </div>
         )}
 
-        {/* Detailed judge extras: jurisdiction, years */}
-        {!hasSummary && judge.years_on_bench && (
+        {/* Detailed judge extras: years, jurisdiction, case types */}
+        {!hasSummary && (judge.years_on_bench || judge.case_types?.length) && (
           <div className="flex flex-wrap gap-1.5 mb-3 text-[10px]">
-            <span className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-600">{judge.years_on_bench} yrs on bench</span>
+            {judge.years_on_bench && <span className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-600">{judge.years_on_bench} yrs</span>}
             {judge.jurisdiction && <span className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-600">{judge.jurisdiction}</span>}
+            {judge.case_types?.map((t) => (
+              <span key={t} className="px-1.5 py-0.5 bg-[#C5A059]/10 border border-[#C5A059]/30 text-[#92710C]">{t}</span>
+            ))}
           </div>
+        )}
+
+        {/* Notable cases count for detailed judges */}
+        {judge.notable_cases?.length > 0 && (
+          <p className="text-[10px] text-slate-500 mb-2">
+            {judge.notable_cases.length} notable case{judge.notable_cases.length > 1 ? "s" : ""} · {judge.comparable_cases?.length || 0} comparable case{(judge.comparable_cases?.length || 0) !== 1 ? "s" : ""}
+          </p>
         )}
 
         {/* Weekday sparkline */}
