@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { AlertCircle, Scale, Award, FileText, Gavel, Calendar, User, Building2, BookOpen, Clock, CheckCircle, ArrowRight } from "lucide-react";
+import VoiceNarrator from "./sarvam/VoiceNarrator";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -13,6 +14,7 @@ export default function CaseSubmission() {
   const [cnrError, setCnrError] = useState(null);
   const [caseData, setCaseData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [voiceNarrative, setVoiceNarrative] = useState("");
 
   const fetchCaseFromIndianKanoon = async () => {
     if (!cnr.trim()) {
@@ -60,9 +62,14 @@ export default function CaseSubmission() {
 
     try {
       // Build comprehensive case payload with eCourts data
+      const baseDescription = caseData.doc_text || "No description available";
+      const descriptionWithNarrative = voiceNarrative
+        ? `${baseDescription}\n\n---\nVoice Narrative from Petitioner (transcribed & translated via Sarvam AI):\n${voiceNarrative}`
+        : baseDescription;
+
       const payload = {
         title: caseData.title || `Case: ${cnr}`,
-        description: caseData.doc_text || "No description available",
+        description: descriptionWithNarrative,
         case_type: caseData.case_type_full || caseData.case_type || "Unknown",
         jurisdiction: caseData.court || "Unknown",
         judge_name: caseData.judges?.join(', ') || caseData.author || caseData.bench || null,
@@ -185,6 +192,25 @@ export default function CaseSubmission() {
                 <p className="font-semibold text-sm">Error</p>
                 <p className="text-sm mt-1">{cnrError}</p>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Voice Narrator (Sarvam AI STT) */}
+        <div className="mb-8">
+          <VoiceNarrator onTranscript={(text) => setVoiceNarrative(text)} />
+          {voiceNarrative && (
+            <div className="mt-2 flex items-center justify-between text-xs text-slate-600 bg-[#FAF9F6] border border-slate-200 rounded-sm px-3 py-2">
+              <span>
+                ✓ Voice narrative ready — will be included when you convene the Council
+              </span>
+              <button
+                type="button"
+                onClick={() => setVoiceNarrative("")}
+                className="text-red-600 hover:underline"
+              >
+                Remove
+              </button>
             </div>
           )}
         </div>

@@ -242,7 +242,78 @@ backend:
         agent: "testing"
         comment: "TESTED: Distribution history API working correctly. Returns complete lottery distribution records with winners, amounts, and lottery round information. Verified multiple distribution records are properly stored and retrievable."
 
+  - task: "Sarvam AI TTS Integration"
+    implemented: true
+    working: true
+    file: "backend/sarvam_service.py, backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Created POST /api/sarvam/tts endpoint using Sarvam Bulbul v2 model. Supports 11 Indian languages (Hindi, Tamil, Telugu, Bengali, Marathi, Kannada, Gujarati, Malayalam, Odia, Punjabi, English-IN). Implements automatic text chunking at sentence boundaries (450 char max per chunk), calls Sarvam TTS per chunk, and stitches resulting WAV chunks into a single combined WAV using Python's wave module. Returns base64-encoded WAV audio. Smoke-tested successfully: 1475-char input produced 5 chunks stitched into 5MB combined audio."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE TTS TESTING COMPLETED - ALL TESTS PASSED! ✅ Happy Path: 'Justice delayed is justice denied' in hi-IN → 86KB WAV audio, chunk_count=1, proper base64 encoding. ✅ Long Text Chunking: 1124-char text in en-IN → 3 chunks stitched into 2.5MB single WAV file with valid RIFF header. ✅ Invalid Language: fr-FR correctly rejected with HTTP 400. ✅ Empty Text: Empty string correctly rejected with HTTP 422. All response fields validated: audio_base64 (valid base64 >10KB), language_code, audio_format='wav', chunk_count>=1. Text chunking and WAV stitching working perfectly."
+
+  - task: "Sarvam AI STT Integration"
+    implemented: true
+    working: true
+    file: "backend/sarvam_service.py, backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Created POST /api/sarvam/stt endpoint using Sarvam Saarika v2.5 model with translate_to_english flag. Uses /speech-to-text-translate endpoint when translate=true (auto-detects input language, returns English) or /speech-to-text otherwise. Accepts base64 audio + mime type (webm/wav/mp3/ogg/m4a). Round-trip tested: Hindi audio generated from English → STT translate → English transcript perfectly preserved."
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE STT TESTING COMPLETED - ALL TESTS PASSED! ✅ Round-trip Test: Generated Hindi audio from 'My name is Raj and I was falsely accused' → STT with translate_to_english=true → Perfect English transcript 'my name is raj and i was falsely accused' with all 4 expected words preserved. Response validated: transcript (non-empty), detected_language='en-IN', translated=true, mode='translate'. ✅ Invalid Base64: 'not-valid-base64!!' correctly rejected with HTTP 400. Audio processing working flawlessly with 119KB generated audio successfully transcribed and translated."
+
+  - task: "Sarvam Languages Endpoint"
+    implemented: true
+    working: true
+    file: "backend/sarvam_service.py"
+    stuck_count: 0
+    priority: "low"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "GET /api/sarvam/languages returns all supported language codes, default lang, and model IDs. Tested and returns 11 languages."
+      - working: true
+        agent: "testing"
+        comment: "LANGUAGES ENDPOINT TESTING COMPLETED - PASSED! ✅ GET /api/sarvam/languages returns correct structure with all required fields: languages (dict with 11 BCP-47 codes: hi-IN, ta-IN, te-IN, bn-IN, mr-IN, kn-IN, gu-IN, ml-IN, od-IN, pa-IN, en-IN), default_language='hi-IN', tts_model='bulbul:v2', stt_model='saarika:v2.5'. All language codes and model identifiers validated successfully."
+
+
 frontend:
+  - task: "Verdict Audio Player (Analysis Dashboard)"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/sarvam/VerdictAudioPlayer.jsx, frontend/src/components/AnalysisDashboard.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created VerdictAudioPlayer React component with language dropdown (11 Indian languages), Generate Audio button, Play/Pause controls, and HTML5 audio element. Converts base64 WAV from backend to Blob URL for browser playback. Embedded in the Verdict tab of AnalysisDashboard, receives the Chief Justice's synthesis text (executive_summary + final_verdict + outcome + key_insights + recommendations). Language switcher clears cached audio to force regeneration."
+
+  - task: "Voice Narrator (Case Submission)"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/sarvam/VoiceNarrator.jsx, frontend/src/components/CaseSubmission.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created VoiceNarrator React component using browser MediaRecorder API. Records audio in webm/opus, converts to base64, sends to /api/sarvam/stt with translate_to_english=true. Shows recording timer, live indicator, transcribed English text on success. Detected language badge shown when auto-detect is used. Added to /submit page below the CNR search box. Voice narrative is appended to case description when user clicks Convene the AI Legal Council, giving the LLM extra context from the petitioner's own words."
+
+
   - task: "eCourts Integration with Fallback UI"
     implemented: true
     working: true
@@ -329,14 +400,16 @@ frontend:
 
 metadata:
   created_by: "main_agent"
-  version: "1.0"
-  test_sequence: 0
+  version: "1.1"
+  test_sequence: 1
   run_ui: false
 
 test_plan:
   current_focus:
-    - "eCourts API Integration with Indian Kanoon Fallback"
-    - "eCourts Integration with Fallback UI"
+    - "Sarvam AI TTS Integration"
+    - "Sarvam AI STT Integration"
+    - "Verdict Audio Player (Analysis Dashboard)"
+    - "Voice Narrator (Case Submission)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -560,3 +633,38 @@ agent_communication:
       - Test error handling for invalid CNR
       - Test responsive layout on mobile/tablet
       - Verify all icons display correctly
+
+  - agent: "testing"
+    message: |
+      🎉 SARVAM AI INTEGRATION TESTING COMPLETED - ALL ENDPOINTS WORKING PERFECTLY!
+      
+      ✅ COMPREHENSIVE TEST RESULTS (7/7 tests passed):
+      
+      1. GET /api/sarvam/languages: ✅ WORKING
+         - Returns all 11 BCP-47 language codes (hi-IN, ta-IN, te-IN, bn-IN, mr-IN, kn-IN, gu-IN, ml-IN, od-IN, pa-IN, en-IN)
+         - Correct default_language='hi-IN', tts_model='bulbul:v2', stt_model='saarika:v2.5'
+         - All required fields validated successfully
+      
+      2. POST /api/sarvam/tts: ✅ ALL TEST CASES PASSED
+         - Happy Path: 'Justice delayed is justice denied' (hi-IN) → 86KB WAV audio, chunk_count=1
+         - Long Text Chunking: 1124-char text (en-IN) → 3 chunks stitched into 2.5MB single WAV with valid RIFF header
+         - Invalid Language: fr-FR correctly rejected with HTTP 400
+         - Empty Text: Empty string correctly rejected with HTTP 422
+         - All response fields validated: audio_base64 (valid base64 >10KB), language_code, audio_format='wav', chunk_count>=1
+      
+      3. POST /api/sarvam/stt: ✅ ALL TEST CASES PASSED
+         - Round-trip Test: Generated Hindi audio from 'My name is Raj and I was falsely accused' → STT with translate_to_english=true → Perfect English transcript with all 4 expected words preserved
+         - Response validated: transcript (non-empty), detected_language='en-IN', translated=true, mode='translate'
+         - Invalid Base64: 'not-valid-base64!!' correctly rejected with HTTP 400
+         - Audio processing working flawlessly with 119KB generated audio successfully transcribed and translated
+      
+      🔧 TECHNICAL VALIDATION:
+      ✓ Text chunking algorithm working correctly (450 char max per chunk)
+      ✓ WAV audio stitching preserving RIFF header format
+      ✓ Base64 encoding/decoding functioning properly
+      ✓ Language validation enforcing supported BCP-47 codes
+      ✓ Round-trip TTS→STT maintaining transcript fidelity
+      ✓ Error handling for invalid inputs (language codes, base64, empty text)
+      ✓ Response structure compliance with API specifications
+      
+      The Sarvam AI integration is production-ready and fully functional!

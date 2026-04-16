@@ -15,6 +15,7 @@ import requests
 from ecourts_helper import transform_ecourts_to_unified_format
 from ecourts_api_client import ecourts_client
 from map import COURT_STATE_MAP
+from sarvam_service import sarvam_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -1463,6 +1464,7 @@ async def startup_event():
 
 
 app.include_router(api_router)
+app.include_router(sarvam_router, prefix="/api")
 
 
 

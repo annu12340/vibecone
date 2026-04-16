@@ -10,6 +10,7 @@ import { JudgeIntelligencePanel } from "./analysis/JudgeIntelligencePanel";
 import { JudgeProfileTab } from "./analysis/JudgeProfileTab";
 import { SidebarPanels } from "./analysis/SidebarPanels";
 import { STAGE_LABELS, MEMBER_ORDER } from "./analysis/constants";
+import VerdictAudioPlayer from "./sarvam/VerdictAudioPlayer";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -285,6 +286,19 @@ export default function AnalysisDashboard() {
 
               {/* Tab 4: Verdict */}
               <TabsContent value="verdict" className="mt-6 space-y-6" data-testid="tab-content-verdict">
+                {/* Voice playback of verdict */}
+                {chiefData?.status === "complete" && chiefData?.synthesis && (
+                  <VerdictAudioPlayer
+                    text={[
+                      chiefData.synthesis.executive_summary,
+                      chiefData.synthesis.final_verdict && `Final Verdict: ${chiefData.synthesis.final_verdict}`,
+                      chiefData.synthesis.outcome_assessment?.most_likely_outcome && `Most Likely Outcome: ${chiefData.synthesis.outcome_assessment.most_likely_outcome}`,
+                      Array.isArray(chiefData.synthesis.key_insights) && chiefData.synthesis.key_insights.length > 0 && `Key Insights: ${chiefData.synthesis.key_insights.join(". ")}`,
+                      Array.isArray(chiefData.synthesis.recommendations_for_user) && chiefData.synthesis.recommendations_for_user.length > 0 && `Recommendations: ${chiefData.synthesis.recommendations_for_user.join(". ")}`,
+                    ].filter(Boolean).join(". ")}
+                    title="Listen to the Final Verdict"
+                  />
+                )}
                 {/* Judge Intelligence above verdict */}
                 {analysis?.judge_profile_snapshot && (
                   <JudgeIntelligencePanel

@@ -1,497 +1,536 @@
 #!/usr/bin/env python3
 """
-Comprehensive Backend API Testing for LexAI Legal Intelligence System - Reward System
-Tests the complete reward system flow including fine management, prisoner management, 
-behavior tracking, and lottery system.
+Backend Test Suite for Sarvam AI Integration
+Tests the three new Sarvam AI endpoints:
+1. GET /api/sarvam/languages
+2. POST /api/sarvam/tts (Text-to-Speech)
+3. POST /api/sarvam/stt (Speech-to-Text)
 """
 
 import requests
+import base64
 import json
-import sys
-from datetime import datetime, timezone
-from typing import Dict, List, Any
+import time
+from typing import Dict, Any
 
-# Configuration
+# Backend URL from frontend/.env
 BASE_URL = "https://uniqueness-detector.preview.emergentagent.com/api"
-HEADERS = {"Content-Type": "application/json"}
 
-class TestResults:
+class SarvamAITester:
     def __init__(self):
-        self.passed = 0
-        self.failed = 0
-        self.errors = []
-        self.warnings = []
-    
-    def log_pass(self, test_name: str):
-        self.passed += 1
-        print(f"✅ PASS: {test_name}")
-    
-    def log_fail(self, test_name: str, error: str):
-        self.failed += 1
-        self.errors.append(f"{test_name}: {error}")
-        print(f"❌ FAIL: {test_name} - {error}")
-    
-    def log_warning(self, test_name: str, warning: str):
-        self.warnings.append(f"{test_name}: {warning}")
-        print(f"⚠️  WARNING: {test_name} - {warning}")
-    
-    def summary(self):
-        print(f"\n{'='*60}")
-        print(f"TEST SUMMARY")
-        print(f"{'='*60}")
-        print(f"✅ Passed: {self.passed}")
-        print(f"❌ Failed: {self.failed}")
-        print(f"⚠️  Warnings: {len(self.warnings)}")
+        self.base_url = BASE_URL
+        self.session = requests.Session()
+        self.session.headers.update({
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        })
         
-        if self.errors:
-            print(f"\n🔴 CRITICAL ERRORS:")
-            for error in self.errors:
-                print(f"  - {error}")
+    def test_languages_endpoint(self) -> Dict[str, Any]:
+        """Test GET /api/sarvam/languages endpoint"""
+        print("\n=== Testing GET /api/sarvam/languages ===")
         
-        if self.warnings:
-            print(f"\n🟡 WARNINGS:")
-            for warning in self.warnings:
-                print(f"  - {warning}")
+        try:
+            response = self.session.get(f"{self.base_url}/sarvam/languages")
+            
+            print(f"Status Code: {response.status_code}")
+            print(f"Response Headers: {dict(response.headers)}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                print(f"Response Data: {json.dumps(data, indent=2)}")
+                
+                # Validate response structure
+                required_keys = ['languages', 'default_language', 'tts_model', 'stt_model']
+                missing_keys = [key for key in required_keys if key not in data]
+                
+                if missing_keys:
+                    return {
+                        'success': False,
+                        'error': f"Missing required keys: {missing_keys}",
+                        'response': data
+                    }
+                
+                # Validate languages dict has 11 BCP-47 codes
+                languages = data.get('languages', {})
+                expected_codes = [
+                    'hi-IN', 'ta-IN', 'te-IN', 'bn-IN', 'mr-IN', 
+                    'kn-IN', 'gu-IN', 'ml-IN', 'od-IN', 'pa-IN', 'en-IN'
+                ]
+                
+                missing_codes = [code for code in expected_codes if code not in languages]
+                if missing_codes:
+                    return {
+                        'success': False,
+                        'error': f"Missing language codes: {missing_codes}",
+                        'response': data
+                    }
+                
+                # Validate specific values
+                if data.get('default_language') != 'hi-IN':
+                    return {
+                        'success': False,
+                        'error': f"Expected default_language 'hi-IN', got '{data.get('default_language')}'",
+                        'response': data
+                    }
+                
+                if data.get('tts_model') != 'bulbul:v2':
+                    return {
+                        'success': False,
+                        'error': f"Expected tts_model 'bulbul:v2', got '{data.get('tts_model')}'",
+                        'response': data
+                    }
+                
+                if data.get('stt_model') != 'saarika:v2.5':
+                    return {
+                        'success': False,
+                        'error': f"Expected stt_model 'saarika:v2.5', got '{data.get('stt_model')}'",
+                        'response': data
+                    }
+                
+                return {
+                    'success': True,
+                    'message': 'Languages endpoint working correctly',
+                    'response': data
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f"HTTP {response.status_code}: {response.text}",
+                    'response': None
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f"Exception: {str(e)}",
+                'response': None
+            }
+    
+    def test_tts_endpoint(self) -> Dict[str, Any]:
+        """Test POST /api/sarvam/tts endpoint with multiple test cases"""
+        print("\n=== Testing POST /api/sarvam/tts ===")
         
-        return self.failed == 0
-
-def make_request(method: str, endpoint: str, data: Dict = None) -> Dict:
-    """Make HTTP request and return response data"""
-    url = f"{BASE_URL}{endpoint}"
-    try:
-        if method.upper() == "GET":
-            response = requests.get(url, headers=HEADERS, timeout=30)
-        elif method.upper() == "POST":
-            response = requests.post(url, headers=HEADERS, json=data, timeout=30)
-        elif method.upper() == "PUT":
-            response = requests.put(url, headers=HEADERS, json=data, timeout=30)
-        else:
-            raise ValueError(f"Unsupported method: {method}")
+        test_results = {}
         
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        raise Exception(f"Request failed: {str(e)}")
-
-def test_api_health(results: TestResults):
-    """Test basic API connectivity"""
-    print(f"\n{'='*60}")
-    print("🔍 TESTING API HEALTH")
-    print(f"{'='*60}")
-    
-    try:
-        response = make_request("GET", "/")
-        if "Legal Intelligence System API" in response.get("message", ""):
-            results.log_pass("API Health Check")
-            return True
-        else:
-            results.log_fail("API Health Check", "Unexpected response format")
-            return False
-    except Exception as e:
-        results.log_fail("API Health Check", str(e))
-        return False
-
-def test_fine_management(results: TestResults) -> Dict:
-    """Test fine management APIs"""
-    print(f"\n{'='*60}")
-    print("💰 TESTING FINE MANAGEMENT")
-    print(f"{'='*60}")
-    
-    test_data = {}
-    
-    # First, get a case ID for testing
-    try:
-        cases = make_request("GET", "/cases")
-        if not cases:
-            results.log_fail("Get Cases for Fine Testing", "No cases available for testing")
-            return test_data
-        
-        case_id = cases[0]["id"]
-        case_title = cases[0]["title"]
-        results.log_pass("Get Cases for Fine Testing")
-        test_data["case_id"] = case_id
-        test_data["case_title"] = case_title
-    except Exception as e:
-        results.log_fail("Get Cases for Fine Testing", str(e))
-        return test_data
-    
-    # Test creating a fine
-    try:
-        fine_data = {
-            "case_id": case_id,
-            "case_title": case_title,
-            "convicted_party": "John Doe",
-            "amount": 100000.0,
-            "description": "Test fine for reward system testing"
+        # Test Case A: Happy path
+        print("\n--- Test Case A: Happy Path ---")
+        test_a_payload = {
+            "text": "Justice delayed is justice denied.",
+            "language_code": "hi-IN"
         }
         
-        fine_response = make_request("POST", "/fines", fine_data)
-        
-        # Verify fine creation
-        if fine_response.get("id") and fine_response.get("amount") == 100000.0:
-            results.log_pass("Create Fine")
-            test_data["fine_id"] = fine_response["id"]
+        try:
+            response = self.session.post(f"{self.base_url}/sarvam/tts", json=test_a_payload)
+            print(f"Status Code: {response.status_code}")
             
-            # Verify allocation calculation (30% reward fund, 70% government)
-            allocation = fine_response.get("allocation", {})
-            expected_reward = 100000.0 * 0.30  # 30000
-            expected_government = 100000.0 * 0.70  # 70000
-            
-            if (allocation.get("reward_fund") == expected_reward and 
-                allocation.get("government") == expected_government):
-                results.log_pass("Fine Allocation Calculation (30/70 split)")
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Validate response structure
+                required_keys = ['audio_base64', 'language_code', 'audio_format', 'chunk_count']
+                missing_keys = [key for key in required_keys if key not in data]
+                
+                if missing_keys:
+                    test_results['happy_path'] = {
+                        'success': False,
+                        'error': f"Missing keys: {missing_keys}"
+                    }
+                else:
+                    # Validate values
+                    if data.get('language_code') != 'hi-IN':
+                        test_results['happy_path'] = {
+                            'success': False,
+                            'error': f"Expected language_code 'hi-IN', got '{data.get('language_code')}'"
+                        }
+                    elif data.get('audio_format') != 'wav':
+                        test_results['happy_path'] = {
+                            'success': False,
+                            'error': f"Expected audio_format 'wav', got '{data.get('audio_format')}'"
+                        }
+                    elif data.get('chunk_count') < 1:
+                        test_results['happy_path'] = {
+                            'success': False,
+                            'error': f"Expected chunk_count >= 1, got {data.get('chunk_count')}"
+                        }
+                    else:
+                        # Validate base64 audio
+                        audio_b64 = data.get('audio_base64', '')
+                        if not audio_b64:
+                            test_results['happy_path'] = {
+                                'success': False,
+                                'error': "audio_base64 is empty"
+                            }
+                        else:
+                            try:
+                                audio_bytes = base64.b64decode(audio_b64)
+                                if len(audio_bytes) <= 10000:
+                                    test_results['happy_path'] = {
+                                        'success': False,
+                                        'error': f"Audio too short: {len(audio_bytes)} bytes (expected > 10000)"
+                                    }
+                                else:
+                                    test_results['happy_path'] = {
+                                        'success': True,
+                                        'message': f"Happy path working. Audio: {len(audio_bytes)} bytes, chunks: {data.get('chunk_count')}"
+                                    }
+                            except Exception as e:
+                                test_results['happy_path'] = {
+                                    'success': False,
+                                    'error': f"Invalid base64 audio: {str(e)}"
+                                }
             else:
-                results.log_fail("Fine Allocation Calculation", 
-                    f"Expected reward_fund: {expected_reward}, government: {expected_government}, "
-                    f"Got reward_fund: {allocation.get('reward_fund')}, government: {allocation.get('government')}")
-        else:
-            results.log_fail("Create Fine", "Invalid response format or amount")
-    except Exception as e:
-        results.log_fail("Create Fine", str(e))
-    
-    # Test reward fund status update
-    try:
-        fund_status = make_request("GET", "/reward-fund/status")
-        if fund_status.get("total_balance") >= 30000:
-            results.log_pass("Reward Fund Balance Update")
-            test_data["initial_fund_balance"] = fund_status["total_balance"]
-        else:
-            results.log_fail("Reward Fund Balance Update", 
-                f"Expected balance >= 30000, got {fund_status.get('total_balance')}")
-    except Exception as e:
-        results.log_fail("Reward Fund Balance Update", str(e))
-    
-    # Test getting all fines
-    try:
-        fines = make_request("GET", "/fines")
-        if isinstance(fines, list) and len(fines) > 0:
-            results.log_pass("Get All Fines")
-        else:
-            results.log_fail("Get All Fines", "No fines returned or invalid format")
-    except Exception as e:
-        results.log_fail("Get All Fines", str(e))
-    
-    return test_data
-
-def test_prisoner_management(results: TestResults) -> Dict:
-    """Test prisoner management APIs"""
-    print(f"\n{'='*60}")
-    print("👤 TESTING PRISONER MANAGEMENT")
-    print(f"{'='*60}")
-    
-    test_data = {"prisoner_ids": []}
-    
-    # Create 4 test prisoners
-    prisoners_data = [
-        {
-            "name": "Test Prisoner 1",
-            "prisoner_id_number": "PID-001",
-            "admission_date": "2023-01-15"
-        },
-        {
-            "name": "Test Prisoner 2", 
-            "prisoner_id_number": "PID-002",
-            "admission_date": "2023-03-20"
-        },
-        {
-            "name": "Test Prisoner 3",
-            "prisoner_id_number": "PID-003", 
-            "admission_date": "2023-06-10"
-        },
-        {
-            "name": "Test Prisoner 4",
-            "prisoner_id_number": "PID-004",
-            "admission_date": "2023-08-05"
+                test_results['happy_path'] = {
+                    'success': False,
+                    'error': f"HTTP {response.status_code}: {response.text}"
+                }
+                
+        except Exception as e:
+            test_results['happy_path'] = {
+                'success': False,
+                'error': f"Exception: {str(e)}"
+            }
+        
+        # Test Case B: Long text (chunking)
+        print("\n--- Test Case B: Long Text Chunking ---")
+        long_sentence = "The Indian legal system is based on the English common law system and has evolved over centuries to incorporate various statutes, regulations, and judicial precedents that govern the administration of justice in the country."
+        long_text = " ".join([long_sentence] * 5)  # ~1500 characters
+        
+        test_b_payload = {
+            "text": long_text,
+            "language_code": "en-IN"
         }
-    ]
-    
-    # Create prisoners
-    for i, prisoner_data in enumerate(prisoners_data, 1):
+        
         try:
-            prisoner_response = make_request("POST", "/prisoners", prisoner_data)
-            if prisoner_response.get("id"):
-                results.log_pass(f"Create Prisoner {i}")
-                test_data["prisoner_ids"].append(prisoner_response["id"])
+            response = self.session.post(f"{self.base_url}/sarvam/tts", json=test_b_payload)
+            print(f"Status Code: {response.status_code}")
+            print(f"Text length: {len(long_text)} characters")
+            
+            if response.status_code == 200:
+                data = response.json()
+                chunk_count = data.get('chunk_count', 0)
+                
+                if chunk_count < 3:
+                    test_results['long_text'] = {
+                        'success': False,
+                        'error': f"Expected chunk_count >= 3 for long text, got {chunk_count}"
+                    }
+                else:
+                    # Validate audio is a single WAV file
+                    audio_b64 = data.get('audio_base64', '')
+                    try:
+                        audio_bytes = base64.b64decode(audio_b64)
+                        # Check for WAV header (first 4 bytes should be b"RIFF")
+                        if audio_bytes[:4] != b"RIFF":
+                            test_results['long_text'] = {
+                                'success': False,
+                                'error': f"Audio doesn't start with RIFF header: {audio_bytes[:4]}"
+                            }
+                        else:
+                            test_results['long_text'] = {
+                                'success': True,
+                                'message': f"Long text chunking working. Chunks: {chunk_count}, Audio: {len(audio_bytes)} bytes"
+                            }
+                    except Exception as e:
+                        test_results['long_text'] = {
+                            'success': False,
+                            'error': f"Audio validation failed: {str(e)}"
+                        }
             else:
-                results.log_fail(f"Create Prisoner {i}", "No ID returned")
+                test_results['long_text'] = {
+                    'success': False,
+                    'error': f"HTTP {response.status_code}: {response.text}"
+                }
+                
         except Exception as e:
-            results.log_fail(f"Create Prisoner {i}", str(e))
-    
-    # Test getting all prisoners
-    try:
-        all_prisoners = make_request("GET", "/prisoners")
-        if isinstance(all_prisoners, list) and len(all_prisoners) >= 4:
-            results.log_pass("Get All Prisoners")
-        else:
-            results.log_fail("Get All Prisoners", f"Expected >= 4 prisoners, got {len(all_prisoners) if isinstance(all_prisoners, list) else 0}")
-    except Exception as e:
-        results.log_fail("Get All Prisoners", str(e))
-    
-    # Test filtering by status
-    try:
-        imprisoned_prisoners = make_request("GET", "/prisoners?status=imprisoned")
-        if isinstance(imprisoned_prisoners, list):
-            results.log_pass("Filter Prisoners by Status")
-        else:
-            results.log_fail("Filter Prisoners by Status", "Invalid response format")
-    except Exception as e:
-        results.log_fail("Filter Prisoners by Status", str(e))
-    
-    return test_data
-
-def test_behavior_tracking(results: TestResults, prisoner_ids: List[str]):
-    """Test behavior tracking APIs"""
-    print(f"\n{'='*60}")
-    print("📝 TESTING BEHAVIOR TRACKING")
-    print(f"{'='*60}")
-    
-    if len(prisoner_ids) < 3:
-        results.log_fail("Behavior Tracking Setup", "Not enough prisoners for testing")
-        return
-    
-    # Add positive behavior records for first 3 prisoners
-    for i, prisoner_id in enumerate(prisoner_ids[:3], 1):
+            test_results['long_text'] = {
+                'success': False,
+                'error': f"Exception: {str(e)}"
+            }
+        
+        # Test Case C: Invalid language
+        print("\n--- Test Case C: Invalid Language ---")
+        test_c_payload = {
+            "text": "Test",
+            "language_code": "fr-FR"
+        }
+        
         try:
-            behavior_data = {
-                "recorded_by": "Test Jailer",
-                "description": f"Excellent behavior during work duty - Prisoner {i}",
-                "type": "positive"
+            response = self.session.post(f"{self.base_url}/sarvam/tts", json=test_c_payload)
+            print(f"Status Code: {response.status_code}")
+            
+            if response.status_code == 400:
+                response_text = response.text.lower()
+                if 'unsupported' in response_text or 'language' in response_text:
+                    test_results['invalid_language'] = {
+                        'success': True,
+                        'message': "Invalid language correctly rejected"
+                    }
+                else:
+                    test_results['invalid_language'] = {
+                        'success': False,
+                        'error': f"Expected unsupported language error, got: {response.text}"
+                    }
+            else:
+                test_results['invalid_language'] = {
+                    'success': False,
+                    'error': f"Expected HTTP 400, got {response.status_code}: {response.text}"
+                }
+                
+        except Exception as e:
+            test_results['invalid_language'] = {
+                'success': False,
+                'error': f"Exception: {str(e)}"
+            }
+        
+        # Test Case D: Empty text
+        print("\n--- Test Case D: Empty Text ---")
+        test_d_payload = {
+            "text": "",
+            "language_code": "hi-IN"
+        }
+        
+        try:
+            response = self.session.post(f"{self.base_url}/sarvam/tts", json=test_d_payload)
+            print(f"Status Code: {response.status_code}")
+            
+            if response.status_code in [400, 422]:
+                test_results['empty_text'] = {
+                    'success': True,
+                    'message': "Empty text correctly rejected"
+                }
+            else:
+                test_results['empty_text'] = {
+                    'success': False,
+                    'error': f"Expected HTTP 400/422 for empty text, got {response.status_code}: {response.text}"
+                }
+                
+        except Exception as e:
+            test_results['empty_text'] = {
+                'success': False,
+                'error': f"Exception: {str(e)}"
+            }
+        
+        return test_results
+    
+    def test_stt_endpoint(self) -> Dict[str, Any]:
+        """Test POST /api/sarvam/stt endpoint"""
+        print("\n=== Testing POST /api/sarvam/stt ===")
+        
+        test_results = {}
+        
+        # First, generate audio using TTS for round-trip test
+        print("\n--- Generating audio for STT test ---")
+        tts_payload = {
+            "text": "My name is Raj and I was falsely accused.",
+            "language_code": "hi-IN"
+        }
+        
+        try:
+            tts_response = self.session.post(f"{self.base_url}/sarvam/tts", json=tts_payload)
+            
+            if tts_response.status_code != 200:
+                return {
+                    'round_trip': {
+                        'success': False,
+                        'error': f"TTS failed for STT test: HTTP {tts_response.status_code}"
+                    }
+                }
+            
+            tts_data = tts_response.json()
+            audio_base64 = tts_data.get('audio_base64')
+            
+            if not audio_base64:
+                return {
+                    'round_trip': {
+                        'success': False,
+                        'error': "TTS returned no audio for STT test"
+                    }
+                }
+            
+            print(f"Generated audio: {len(base64.b64decode(audio_base64))} bytes")
+            
+            # Test Case A: Round-trip STT with translation
+            print("\n--- Test Case A: Round-trip STT with Translation ---")
+            stt_payload = {
+                "audio_base64": audio_base64,
+                "audio_mime_type": "audio/wav",
+                "translate_to_english": True
             }
             
-            behavior_response = make_request("POST", f"/prisoners/{prisoner_id}/behavior", behavior_data)
-            if "message" in behavior_response and "record" in behavior_response:
-                results.log_pass(f"Add Positive Behavior Record - Prisoner {i}")
-            else:
-                results.log_fail(f"Add Positive Behavior Record - Prisoner {i}", "Invalid response format")
-        except Exception as e:
-            results.log_fail(f"Add Positive Behavior Record - Prisoner {i}", str(e))
-    
-    # Verify behavior records are stored
-    for i, prisoner_id in enumerate(prisoner_ids[:3], 1):
-        try:
-            prisoner = make_request("GET", f"/prisoners/{prisoner_id}")
-            behavior_records = prisoner.get("behavior_records", [])
-            if len(behavior_records) > 0:
-                results.log_pass(f"Verify Behavior Record Storage - Prisoner {i}")
-            else:
-                results.log_fail(f"Verify Behavior Record Storage - Prisoner {i}", "No behavior records found")
-        except Exception as e:
-            results.log_fail(f"Verify Behavior Record Storage - Prisoner {i}", str(e))
-
-def test_release_and_certification(results: TestResults, prisoner_ids: List[str]):
-    """Test prisoner release and certification"""
-    print(f"\n{'='*60}")
-    print("🔓 TESTING RELEASE AND CERTIFICATION")
-    print(f"{'='*60}")
-    
-    if len(prisoner_ids) < 3:
-        results.log_fail("Release and Certification Setup", "Not enough prisoners for testing")
-        return
-    
-    current_date = datetime.now(timezone.utc).isoformat()
-    
-    # Release first 3 prisoners
-    for i, prisoner_id in enumerate(prisoner_ids[:3], 1):
-        try:
-            release_data = {
-                "status": "released",
-                "actual_release_date": current_date
-            }
+            stt_response = self.session.post(f"{self.base_url}/sarvam/stt", json=stt_payload)
+            print(f"Status Code: {stt_response.status_code}")
             
-            release_response = make_request("PUT", f"/prisoners/{prisoner_id}", release_data)
-            if release_response.get("status") == "released":
-                results.log_pass(f"Release Prisoner {i}")
+            if stt_response.status_code == 200:
+                stt_data = stt_response.json()
+                print(f"STT Response: {json.dumps(stt_data, indent=2)}")
+                
+                # Validate response structure
+                required_keys = ['transcript', 'translated', 'mode', 'detected_language']
+                missing_keys = [key for key in required_keys if key not in stt_data]
+                
+                if missing_keys:
+                    test_results['round_trip'] = {
+                        'success': False,
+                        'error': f"Missing keys: {missing_keys}"
+                    }
+                else:
+                    transcript = stt_data.get('transcript', '').lower()
+                    translated = stt_data.get('translated')
+                    mode = stt_data.get('mode')
+                    detected_language = stt_data.get('detected_language')
+                    
+                    # Validate values
+                    if not transcript:
+                        test_results['round_trip'] = {
+                            'success': False,
+                            'error': "Transcript is empty"
+                        }
+                    elif translated != True:
+                        test_results['round_trip'] = {
+                            'success': False,
+                            'error': f"Expected translated=true, got {translated}"
+                        }
+                    elif mode != 'translate':
+                        test_results['round_trip'] = {
+                            'success': False,
+                            'error': f"Expected mode='translate', got '{mode}'"
+                        }
+                    elif not detected_language:
+                        test_results['round_trip'] = {
+                            'success': False,
+                            'error': "detected_language is empty"
+                        }
+                    else:
+                        # Check if transcript contains recognizable words
+                        expected_words = ['raj', 'name', 'falsely', 'accused']
+                        found_words = [word for word in expected_words if word in transcript]
+                        
+                        if len(found_words) >= 2:  # At least 2 recognizable words
+                            test_results['round_trip'] = {
+                                'success': True,
+                                'message': f"Round-trip STT working. Transcript: '{transcript}', Found words: {found_words}"
+                            }
+                        else:
+                            test_results['round_trip'] = {
+                                'success': False,
+                                'error': f"Transcript doesn't contain expected words. Got: '{transcript}'"
+                            }
             else:
-                results.log_fail(f"Release Prisoner {i}", f"Status not updated, got: {release_response.get('status')}")
+                test_results['round_trip'] = {
+                    'success': False,
+                    'error': f"HTTP {stt_response.status_code}: {stt_response.text}"
+                }
+                
         except Exception as e:
-            results.log_fail(f"Release Prisoner {i}", str(e))
-    
-    # Certify good behavior for first 3 prisoners
-    for i, prisoner_id in enumerate(prisoner_ids[:3], 1):
+            test_results['round_trip'] = {
+                'success': False,
+                'error': f"Exception: {str(e)}"
+            }
+        
+        # Test Case B: Invalid base64
+        print("\n--- Test Case B: Invalid Base64 ---")
+        invalid_payload = {
+            "audio_base64": "not-valid-base64!!",
+            "audio_mime_type": "audio/wav"
+        }
+        
         try:
-            cert_response = make_request("PUT", f"/prisoners/{prisoner_id}/certify")
-            if "message" in cert_response and "certified" in cert_response["message"]:
-                results.log_pass(f"Certify Good Behavior - Prisoner {i}")
+            response = self.session.post(f"{self.base_url}/sarvam/stt", json=invalid_payload)
+            print(f"Status Code: {response.status_code}")
+            
+            if response.status_code == 400:
+                test_results['invalid_base64'] = {
+                    'success': True,
+                    'message': "Invalid base64 correctly rejected"
+                }
             else:
-                results.log_fail(f"Certify Good Behavior - Prisoner {i}", "Invalid response format")
+                test_results['invalid_base64'] = {
+                    'success': False,
+                    'error': f"Expected HTTP 400 for invalid base64, got {response.status_code}: {response.text}"
+                }
+                
         except Exception as e:
-            results.log_fail(f"Certify Good Behavior - Prisoner {i}", str(e))
+            test_results['invalid_base64'] = {
+                'success': False,
+                'error': f"Exception: {str(e)}"
+            }
+        
+        return test_results
     
-    # Verify eligible prisoners
-    try:
-        eligible = make_request("GET", "/prisoners/eligible")
-        if isinstance(eligible, list) and len(eligible) >= 3:
-            results.log_pass("Get Eligible Prisoners")
-            print(f"   Found {len(eligible)} eligible prisoners")
+    def run_all_tests(self) -> Dict[str, Any]:
+        """Run all Sarvam AI endpoint tests"""
+        print("🧪 Starting Sarvam AI Integration Tests")
+        print(f"Backend URL: {self.base_url}")
+        
+        all_results = {}
+        
+        # Test 1: Languages endpoint
+        all_results['languages'] = self.test_languages_endpoint()
+        
+        # Test 2: TTS endpoint
+        all_results['tts'] = self.test_tts_endpoint()
+        
+        # Test 3: STT endpoint
+        all_results['stt'] = self.test_stt_endpoint()
+        
+        return all_results
+    
+    def print_summary(self, results: Dict[str, Any]):
+        """Print test summary"""
+        print("\n" + "="*60)
+        print("🧪 SARVAM AI INTEGRATION TEST SUMMARY")
+        print("="*60)
+        
+        total_tests = 0
+        passed_tests = 0
+        
+        for endpoint, endpoint_results in results.items():
+            print(f"\n📡 {endpoint.upper()} ENDPOINT:")
+            
+            if isinstance(endpoint_results, dict) and 'success' in endpoint_results:
+                # Single test result (languages endpoint)
+                total_tests += 1
+                if endpoint_results['success']:
+                    passed_tests += 1
+                    print(f"  ✅ {endpoint_results.get('message', 'PASSED')}")
+                else:
+                    print(f"  ❌ {endpoint_results.get('error', 'FAILED')}")
+            else:
+                # Multiple test results (tts/stt endpoints)
+                for test_name, test_result in endpoint_results.items():
+                    total_tests += 1
+                    if test_result['success']:
+                        passed_tests += 1
+                        print(f"  ✅ {test_name}: {test_result.get('message', 'PASSED')}")
+                    else:
+                        print(f"  ❌ {test_name}: {test_result.get('error', 'FAILED')}")
+        
+        print(f"\n📊 OVERALL RESULTS: {passed_tests}/{total_tests} tests passed")
+        
+        if passed_tests == total_tests:
+            print("🎉 ALL TESTS PASSED!")
         else:
-            results.log_fail("Get Eligible Prisoners", f"Expected >= 3 eligible prisoners, got {len(eligible) if isinstance(eligible, list) else 0}")
-    except Exception as e:
-        results.log_fail("Get Eligible Prisoners", str(e))
+            print(f"⚠️  {total_tests - passed_tests} tests failed")
+        
+        return passed_tests, total_tests
 
-def test_lottery_system(results: TestResults, initial_balance: float):
-    """Test the lottery system - CRITICAL TEST"""
-    print(f"\n{'='*60}")
-    print("🎰 TESTING LOTTERY SYSTEM (CRITICAL)")
-    print(f"{'='*60}")
-    
-    # Check fund balance before lottery
-    try:
-        fund_before = make_request("GET", "/reward-fund/status")
-        balance_before = fund_before.get("total_balance", 0)
-        print(f"   Fund balance before lottery: ${balance_before:,.2f}")
-        
-        if balance_before <= 0:
-            results.log_fail("Lottery Pre-check", "Insufficient fund balance for lottery")
-            return
-        
-        results.log_pass("Lottery Pre-check - Fund Balance")
-    except Exception as e:
-        results.log_fail("Lottery Pre-check", str(e))
-        return
-    
-    # Run the lottery
-    try:
-        lottery_response = make_request("POST", "/reward-distributions/lottery")
-        
-        # Verify lottery response structure
-        required_fields = ["selected_prisoners", "amount_per_prisoner", "amount_distributed", "fund_balance_before"]
-        missing_fields = [field for field in required_fields if field not in lottery_response]
-        
-        if missing_fields:
-            results.log_fail("Lottery Response Structure", f"Missing fields: {missing_fields}")
-            return
-        
-        selected_prisoners = lottery_response["selected_prisoners"]
-        amount_per_prisoner = lottery_response["amount_per_prisoner"]
-        amount_distributed = lottery_response["amount_distributed"]
-        fund_balance_before = lottery_response["fund_balance_before"]
-        
-        # Verify exactly 3 prisoners selected
-        if len(selected_prisoners) == 3:
-            results.log_pass("Lottery - 3 Prisoners Selected")
-        else:
-            results.log_fail("Lottery - 3 Prisoners Selected", f"Expected 3, got {len(selected_prisoners)}")
-        
-        # Verify equal distribution calculation
-        expected_per_prisoner = fund_balance_before / 3
-        if abs(amount_per_prisoner - expected_per_prisoner) < 0.01:  # Allow for floating point precision
-            results.log_pass("Lottery - Equal Distribution Calculation")
-        else:
-            results.log_fail("Lottery - Equal Distribution Calculation", 
-                f"Expected {expected_per_prisoner:.2f} per prisoner, got {amount_per_prisoner:.2f}")
-        
-        # Verify total distribution equals fund balance
-        if abs(amount_distributed - fund_balance_before) < 0.01:
-            results.log_pass("Lottery - Total Distribution Amount")
-        else:
-            results.log_fail("Lottery - Total Distribution Amount",
-                f"Expected {fund_balance_before:.2f}, got {amount_distributed:.2f}")
-        
-        results.log_pass("Run Lottery")
-        print(f"   Selected {len(selected_prisoners)} prisoners")
-        print(f"   Amount per prisoner: ${amount_per_prisoner:,.2f}")
-        print(f"   Total distributed: ${amount_distributed:,.2f}")
-        
-    except Exception as e:
-        results.log_fail("Run Lottery", str(e))
-        return
-    
-    # Verify fund balance reset to 0
-    try:
-        fund_after = make_request("GET", "/reward-fund/status")
-        balance_after = fund_after.get("total_balance", -1)
-        
-        if balance_after == 0.0:
-            results.log_pass("Lottery - Fund Balance Reset to 0")
-        else:
-            results.log_fail("Lottery - Fund Balance Reset to 0", f"Expected 0, got {balance_after}")
-    except Exception as e:
-        results.log_fail("Lottery - Fund Balance Reset", str(e))
-    
-    # Verify eligible prisoners list is now empty (all marked as rewarded)
-    try:
-        eligible_after = make_request("GET", "/prisoners/eligible")
-        if isinstance(eligible_after, list) and len(eligible_after) == 0:
-            results.log_pass("Lottery - Eligible Prisoners Marked as Rewarded")
-        else:
-            results.log_fail("Lottery - Eligible Prisoners Marked as Rewarded", 
-                f"Expected 0 eligible prisoners, got {len(eligible_after) if isinstance(eligible_after, list) else 'invalid'}")
-    except Exception as e:
-        results.log_fail("Lottery - Eligible Prisoners Check", str(e))
-    
-    # Verify distribution was recorded
-    try:
-        distributions = make_request("GET", "/reward-distributions")
-        if isinstance(distributions, list) and len(distributions) > 0:
-            results.log_pass("Lottery - Distribution History Recorded")
-        else:
-            results.log_fail("Lottery - Distribution History Recorded", "No distributions found")
-    except Exception as e:
-        results.log_fail("Lottery - Distribution History Check", str(e))
-
-def test_error_handling(results: TestResults):
-    """Test error handling scenarios"""
-    print(f"\n{'='*60}")
-    print("⚠️  TESTING ERROR HANDLING")
-    print(f"{'='*60}")
-    
-    # Try to run lottery again (should fail - not enough eligible prisoners)
-    try:
-        lottery_response = make_request("POST", "/reward-distributions/lottery")
-        results.log_fail("Lottery Error Handling", "Expected error but lottery succeeded")
-    except Exception as e:
-        if "Not enough eligible prisoners" in str(e) or "400" in str(e):
-            results.log_pass("Lottery Error Handling - Insufficient Eligible Prisoners")
-        else:
-            results.log_fail("Lottery Error Handling", f"Unexpected error: {str(e)}")
 
 def main():
     """Main test execution"""
-    print("🚀 Starting LexAI Reward System Backend API Tests")
-    print(f"Testing against: {BASE_URL}")
+    tester = SarvamAITester()
+    results = tester.run_all_tests()
+    passed, total = tester.print_summary(results)
     
-    results = TestResults()
-    
-    # Test API health first
-    if not test_api_health(results):
-        print("❌ API health check failed. Aborting tests.")
-        return False
-    
-    # Test fine management
-    fine_data = test_fine_management(results)
-    
-    # Test prisoner management
-    prisoner_data = test_prisoner_management(results)
-    
-    # Test behavior tracking
-    if prisoner_data.get("prisoner_ids"):
-        test_behavior_tracking(results, prisoner_data["prisoner_ids"])
-        
-        # Test release and certification
-        test_release_and_certification(results, prisoner_data["prisoner_ids"])
-        
-        # Test lottery system
-        initial_balance = fine_data.get("initial_fund_balance", 0)
-        if initial_balance > 0:
-            test_lottery_system(results, initial_balance)
-        else:
-            results.log_fail("Lottery System Test", "No initial fund balance available")
-        
-        # Test error handling
-        test_error_handling(results)
-    else:
-        results.log_fail("Prisoner Management Setup", "No prisoners created for subsequent tests")
-    
-    # Print final summary
-    success = results.summary()
-    
-    if success:
-        print(f"\n🎉 ALL TESTS PASSED! Reward system is working correctly.")
-    else:
-        print(f"\n💥 SOME TESTS FAILED! Please review the errors above.")
-    
-    return success
+    # Return results for programmatic use
+    return {
+        'results': results,
+        'summary': {
+            'passed': passed,
+            'total': total,
+            'success_rate': passed / total if total > 0 else 0
+        }
+    }
+
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    main()
