@@ -233,6 +233,9 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Added CNR input field at the top of the case submission form. Implemented 'Fetch Case Info' button that calls /api/indiankanoon/search. Pre-fills form fields (title, description, jurisdiction, judge_name, charges) with Indian Kanoon data only if fields are empty. Shows success/error messages. Includes loading state during API call."
+      - working: "NA"
+        agent: "main"
+        comment: "MAJOR REDESIGN: Completely rebuilt /submit page to focus on CNR lookup. Removed all manual input fields. Now displays fetched Indian Kanoon case information in a clean, organized layout showing: title, court, judge/bench, date, full case document text, referred acts/laws (with badges), citations, referred cases, and document ID. Added 'Convene the AI Legal Council' button at the end that creates the case and navigates to analysis. Responsive design with proper spacing and visual hierarchy."
 
   - task: "Fine Management Page"
     implemented: true
@@ -399,3 +402,48 @@ agent_communication:
       - Verify form fields are pre-filled correctly (only empty fields)
       - Test error handling for invalid CNR
       - Verify success/error messages display properly
+  
+  - agent: "main"
+    message: |
+      MAJOR UPDATE: Complete redesign of /submit page (CaseSubmission.jsx)
+      
+      CHANGES IMPLEMENTED:
+      1. Removed all manual form input fields (title, description, case_type, jurisdiction, judge_name, charges, demographics)
+      2. Simplified to CNR-only lookup interface
+      3. Display fetched Indian Kanoon case information in organized sections:
+         - Case Title (prominent display)
+         - Case Metadata Grid (Court, Judge/Bench, Date)
+         - Full Case Document Text (scrollable with 5000 char preview)
+         - Referred Acts & Laws (displayed as badges, showing up to 10)
+         - Citations (list format, showing up to 5)
+         - Referred Cases (list format, showing up to 5)
+         - Document ID (footer)
+      4. Added "Convene the AI Legal Council" button at the end
+         - Creates case using Indian Kanoon data
+         - Automatically navigates to analysis page
+         - Includes loading state and error handling
+      5. Improved UI/UX:
+         - Gradient backgrounds for key sections
+         - Golden accent colors (#C5A059) for branding
+         - Clear visual hierarchy
+         - Responsive grid layouts
+         - Success banner when case is loaded
+         - Error alerts with icons
+         - Empty state message when no data
+      
+      USER FLOW:
+      1. User enters CNR number
+      2. Clicks "Fetch Case" or presses Enter
+      3. Case information displays in organized sections
+      4. User reviews all case details
+      5. Clicks "Convene the AI Legal Council"
+      6. Redirected to analysis page
+      
+      TESTING NEEDED:
+      - Test CNR fetch with valid CNR (DLCT020357252018)
+      - Verify all sections display correctly
+      - Test "Convene the AI Legal Council" button
+      - Verify navigation to analysis page
+      - Test error handling for invalid CNR
+      - Test responsive layout on mobile/tablet
+      - Verify all icons display correctly
