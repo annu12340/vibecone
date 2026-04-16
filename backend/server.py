@@ -906,6 +906,95 @@ async def get_laws(case_type: Optional[str] = None):
     return laws
 
 
+
+# --- Judge Summary Statistics Routes ---
+@api_router.get("/judge-summary")
+async def get_judge_summary(
+    judge_name: Optional[str] = None,
+    min_cases: Optional[int] = None,
+    min_caste_rate: Optional[float] = None,
+    limit: Optional[int] = 100
+):
+    """Get judge summary statistics from CSV data"""
+    query = {}
+    
+    if judge_name:
+        # Case-insensitive search
+        query["judge_name"] = {"$regex": judge_name, "$options": "i"}
+    
+    if min_cases is not None:
+        query["total_cases"] = {"$gte": min_cases}
+    
+    if min_caste_rate is not None:
+        query["caste_mention_rate"] = {"$gte": min_caste_rate}
+    
+    judges = await db.judge_summary.find(query, {"_id": 0}).limit(limit).to_list(limit)
+    
+    return {
+        "count": len(judges),
+        "judges": judges
+    }
+
+
+@api_router.get("/judge-summary/{judge_name}")
+async def get_judge_summary_by_name(judge_name: str):
+    """Get detailed statistics for a specific judge"""
+    # Try exact match first
+    judge = await db.judge_summary.find_one({"judge_name": judge_name}, {"_id": 0})
+    
+    # If not found, try case-insensitive regex
+    if not judge:
+        judge = await db.judge_summary.find_one(
+            {"judge_name": {"$regex": f"^{judge_name}$", "$options": "i"}},
+            {"_id": 0}
+        )
+    
+    if not judge:
+        raise HTTPException(status_code=404, detail=f"Judge '{judge_name}' not found in summary statistics")
+    
+    return judge
+
+
+@api_router.get("/judge-summary/stats/aggregates")
+async def get_judge_summary_aggregates():
+    """Get aggregate statistics across all judges"""
+    total_judges = await db.judge_summary.count_documents({})
+    
+    # Calculate averages
+    pipeline = [
+        {
+            "$group": {
+                "_id": None,
+                "avg_total_cases": {"$avg": "$total_cases"},
+                "avg_caste_mention_rate": {"$avg": "$caste_mention_rate"},
+                "avg_female_context_rate": {"$avg": "$female_context_rate"},
+                "avg_allowed_rate": {"$avg": "$allowed_rate"},
+                "avg_dismissed_rate": {"$avg": "$dismissed_rate"},
+                "total_cases_all_judges": {"$sum": "$total_cases"}
+            }
+        }
+    ]
+    
+    result = await db.judge_summary.aggregate(pipeline).to_list(1)
+    
+    # Top judges by various metrics
+    top_by_cases = await db.judge_summary.find(
+        {}, {"_id": 0, "judge_name": 1, "total_cases": 1}
+    ).sort("total_cases", -1).limit(10).to_list(10)
+    
+    top_caste_mention = await db.judge_summary.find(
+        {"caste_mention_rate": {"$gt": 0}},
+        {"_id": 0, "judge_name": 1, "caste_mention_rate": 1, "total_cases": 1}
+    ).sort("caste_mention_rate", -1).limit(10).to_list(10)
+    
+    return {
+        "total_judges": total_judges,
+        "averages": result[0] if result else {},
+        "top_judges_by_cases": top_by_cases,
+        "top_judges_caste_mention": top_caste_mention
+    }
+
+
 @api_router.post("/seed")
 async def seed_database():
     from seed_data import get_judge_data, get_laws_data
