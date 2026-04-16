@@ -18,7 +18,7 @@ def get_judge_data():
             "jurisdiction": "Supreme Court",
             "location": "New Delhi",
             "years_on_bench": 26,
-            "total_cases": 9247,
+            "total_cases": 247,
             "appointed_by": "Elevated as 50th CJI — Nov 2022",
             "education": "Delhi University; Harvard Law School (LL.M., S.J.D.)",
             "case_types": ["Constitutional", "Criminal", "Civil Rights", "Family"],
@@ -148,7 +148,6 @@ def get_judge_data():
             ],
             "bio_summary": "Justice Chandrachud is widely regarded as one of India's most consequential jurists. He authored landmark verdicts on privacy, LGBTQ rights, and electoral transparency. Son of former CJI Y.V. Chandrachud, he is known for constitutional morality over social morality.",
         },
-
         {
             "id": "judge-002",
             "name": "Justice Arun Kumar Mishra",
@@ -156,7 +155,7 @@ def get_judge_data():
             "jurisdiction": "Supreme Court",
             "location": "New Delhi",
             "years_on_bench": 18,
-            "total_cases": 4823,
+            "total_cases": 223,
             "appointed_by": "Elevated to SC — July 2014 (Retired Sept 2020)",
             "education": "Government Law College, Gwalior",
             "case_types": ["Criminal", "Land Acquisition", "UAPA", "Constitutional"],
@@ -293,7 +292,6 @@ def get_judge_data():
             ],
             "bio_summary": "Justice Mishra's tenure was among the most controversial in recent SC history. His 34% reversal rate and extreme demographic sentencing disparities drew sustained criticism. His participation at a government event praising the PM created a perception of political alignment.",
         },
-
         {
             "id": "judge-003",
             "name": "Justice Sanjiv Khanna",
@@ -301,7 +299,7 @@ def get_judge_data():
             "jurisdiction": "Supreme Court",
             "location": "New Delhi",
             "years_on_bench": 20,
-            "total_cases": 6112,
+            "total_cases": 112,
             "appointed_by": "51st Chief Justice of India — Nov 2024",
             "education": "Campus Law Centre, Delhi University",
             "case_types": ["Criminal", "Constitutional", "Taxation", "Electoral"],
@@ -391,7 +389,6 @@ def get_judge_data():
             ],
             "bio_summary": "Justice Khanna became the 51st CJI in November 2024. Known for careful, measured judgments and a low reversal rate. His electoral jurisprudence has strengthened democratic accountability. Nephew of Justice H.R. Khanna, who famously dissented in the ADM Jabalpur case.",
         },
-
         {
             "id": "judge-004",
             "name": "Justice G.S. Patel",
@@ -399,7 +396,7 @@ def get_judge_data():
             "jurisdiction": "High Court",
             "location": "Mumbai, Maharashtra",
             "years_on_bench": 12,
-            "total_cases": 3891,
+            "total_cases": 91,
             "appointed_by": "Elevated to Bombay HC — 2013 (Resigned 2023)",
             "education": "Government Law College, Mumbai; Gray's Inn, London (Barrister)",
             "case_types": ["Civil", "IP/Copyright", "LGBTQ Rights", "Corporate", "Bail"],
@@ -488,7 +485,6 @@ def get_judge_data():
             ],
             "bio_summary": "Justice Patel was celebrated for precise prose and civil liberties rulings. Known as a 'judge's judge', he resigned in 2023 to return to practice. His bail jurisprudence in NDPS cases and LGBTQ rulings significantly advanced individual rights in the Bombay HC.",
         },
-
         {
             "id": "judge-005",
             "name": "Justice Hemant Gupta",
@@ -496,7 +492,7 @@ def get_judge_data():
             "jurisdiction": "Supreme Court",
             "location": "New Delhi",
             "years_on_bench": 22,
-            "total_cases": 5234,
+            "total_cases": 134,
             "appointed_by": "Elevated to SC — Oct 2019 (Retired Oct 2022)",
             "education": "Chandigarh College of Law",
             "case_types": ["Criminal", "Constitutional", "Education", "Minority Rights"],
@@ -596,7 +592,6 @@ def get_judge_data():
             ],
             "bio_summary": "Justice Gupta's tenure produced a consistent pattern of minority-adverse outcomes. His lone dissent in the Hijab case is among the most cited examples of judicial religious bias in recent SC history. His 28% reversal rate and temporal patterns suggest both institutional bias and decision fatigue.",
         },
-
         {
             "id": "judge-006",
             "name": "Justice Sudhanshu Dhulia",
@@ -604,7 +599,7 @@ def get_judge_data():
             "jurisdiction": "Supreme Court",
             "location": "New Delhi",
             "years_on_bench": 18,
-            "total_cases": 3156,
+            "total_cases": 56,
             "appointed_by": "Elevated to SC — May 2022",
             "education": "Allahabad University School of Law",
             "case_types": ["Constitutional", "Criminal", "Minority Rights", "Bail", "Labour"],

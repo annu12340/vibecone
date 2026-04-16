@@ -3,79 +3,85 @@
 ## Original Problem Statement
 Build a legal system app for common users that:
 - Given a case, shows similar cases, existing laws and articles, and patterns on judges
-- Uncovers judges' decision patterns and unconscious bias
-- Uses multi-model AI deliberation (inspired by karpathy/llm-council)
-- Looks professional and well thought out
+- Integrates eCourts data (via MCP and mocked fallback)
+- Frontend shows timelines, acts, and AI analysis
+- InLegalBERT semantic search for similar cases and related laws from MongoDB
+- Judge Profiles with comprehensive statistics from CSV and detailed bias analysis
+
+## Core Features
+
+### 1. Case Analysis (CNR Lookup)
+- Submit case by CNR number
+- eCourts data fetching (mocked for DLHC010127602024 with 10s delay)
+- LLM Legal Council analysis (OpenAI/Claude via Emergent LLM Key)
+- Similar cases & related laws via InLegalBERT semantic search
+
+### 2. Judge Profiles
+- 6 detailed judges with full bias intelligence profiles (seed data)
+- 128+ judges from judge_summary.csv with case statistics
+- Unified listing page with search/sort
+- Detail page showing ALL data from both APIs
+- Key Statistics hero, Case Outcomes, Weekday Distribution, Demographic Context
+- Bias Analysis, Comparable Cases, Timeline, Temporal Patterns, Notable Cases
+
+### 3. Case Map
+- Geographical case distribution visualization
+
+### 4. Case History
+- User's previously analyzed cases
+
+### 5. Authority Features
+- Fine Management, Prisoner Management, Reward Fund Dashboard
 
 ## Architecture
-
-### Backend (FastAPI + Motor + MongoDB)
-- `server.py` — Main FastAPI app with all routes
-- `llm_council.py` — LLM Council logic (5 AI personas using Claude Sonnet 4.5)
-- `seed_data.py` — Sample data (6 judges, 15 laws) with full bias intelligence profiles
-
-### Frontend (React + Tailwind + Shadcn)
-- `App.js` — React Router (6 routes: /, /submit, /analysis/:id, /judges, /map, /history)
-- `components/Navbar.jsx` — Sticky nav with glassmorphism
-- `components/LandingPage.jsx` — Hero, features, how-it-works, CTA
-- `components/CaseSubmission.jsx` — Case submission form with Judge dropdown
-- `components/AnalysisDashboard.jsx` — Tabbed analysis view with 4 tabs
-- `components/analysis/` — Extracted dashboard components
-- `components/CaseMap.jsx` — India case distribution map
-- `components/map/` — Map sub-components (StatePanel, stateData)
-- `components/JudgeProfiles.jsx` — Tabbed judge modal with bias analytics
-- `components/CaseHistory.jsx` — Past cases management
-
-### Design System
-- Background: #FAF9F6 (warm off-white)
-- Primary: #0B192C (navy) with gradients to #12223A
-- Accent: #C5A059 (gold)
-- Fonts: Playfair Display (headings) + IBM Plex Sans (body)
-- Ambient shadows, soft borders, glassmorphism navbar
+- **Frontend**: React + Tailwind CSS + Recharts + react-router-dom
+- **Backend**: FastAPI + Motor (MongoDB async)
+- **Database**: MongoDB (`legal_intelligence_db`)
+- **ML**: InLegalBERT (Hugging Face) for semantic search
+- **LLM**: OpenAI/Claude via Emergent LLM Key
 
 ## What's Been Implemented
 
-### India Case Map (April 2026)
-- [x] New page at /map with SVG India map showing case distribution by state
-- [x] Backend endpoint GET /api/cases/by-state aggregates filed cases + precedent cases from analyses
-- [x] State markers colored/sized by case density (gold→red gradient)
-- [x] Click marker → slide-out side panel with full case details
-- [x] Panel shows Filed Cases (with status, judge, View Analysis links) and Precedent Cases (with court, year, outcome)
-- [x] Legend, stats strip, empty state markers for all 30 Indian states
-- [x] Nav link added to navbar
+### Feb 2026 - Session 1-4
+- Full case analysis pipeline with LLM council
+- eCourts integration with mocked fallback
+- InLegalBERT semantic DB search (similar_cases, related_laws)
+- Judge summary CSV import (128 rows)
+- Judge Profiles with CSV stats + detailed profiles
 
-### Judge Profile Tab in Analysis (April 2026)
-- [x] 4th tab "Judge Profile" added between Cross-Review and Final Verdict
-- [x] Shows judge grade, name, court, bias risk, experience, education, ruling split
-- [x] Key observations and "View Full Judge Profile" CTA button
-
-### Color & Professional Polish (April 2026)
-- [x] Warmer background, gradient headers, ambient shadows, glassmorphism navbar
-- [x] Consistent across all 6 pages
-
-### Analysis Dashboard Redesign (April 2026)
-- [x] Tabbed interface (Council Analysis | Cross-Review | Judge Profile | Final Verdict)
-- [x] Stage stepper, accordion sidebar, auto-tab selection
-
-### Core Features (All Complete)
-- [x] Landing page, case submission, 3-stage LLM Council analysis
-- [x] Cross-review deliberation, judge profile integration
-- [x] Deep judge bias detection, real-time polling
-- [x] 6 Indian judge profiles, 15 Indian laws auto-seeded
+### Feb 2026 - Current Session
+- Updated seed data with corrected total_cases (247, 223, 134, 112, 91, 56)
+- Rewrote JudgeProfiles.jsx: unified listing, enriched cards with bias/outlier/grades/case types
+- Rewrote JudgeDetailPage.jsx: full-page layout with Key Stats hero, all CSV fields, charts, demographic tables
+- Removed JudgeModal approach, proper full-page routing
+- All 134 judges display uniformly across both APIs
 
 ## Prioritized Backlog
 
 ### P0
-- [ ] Handle LLM analysis timeout gracefully (502 risk)
+- Expose similar_cases and related_laws from BERT to frontend analysis UI
 
 ### P1
-- [ ] PDF/document upload for case evidence
-- [ ] User authentication (save analyses to account)
-- [ ] Search/filter case history
+- Fix code quality: React hook dependencies (stale closures)
+- Fix code quality: Array index as key
+- Add breadcrumbs/navigation to Judge Detail Page
 
 ### P2
-- [ ] Export analysis as PDF
-- [ ] Share analysis link
-- [ ] Compare two judges side-by-side
-- [ ] Legal chatbot powered by council
-- [ ] Dark mode
+- Refactor server.py (extreme function complexity)
+- Component refactoring (CaseSubmission.jsx 719 lines, PrisonerManagement.jsx 492 lines)
+- Judge listing pagination at scale
+- Server.py decomposition into route modules
+
+## Key Files
+- `/app/backend/seed_data.py` - Judge seed data (6 detailed profiles)
+- `/app/backend/server.py` - All API endpoints
+- `/app/backend/inlegal_bert_service.py` - BERT semantic search
+- `/app/frontend/src/components/JudgeProfiles.jsx` - Judge listing page
+- `/app/frontend/src/components/JudgeDetailPage.jsx` - Judge detail page
+- `/app/frontend/src/App.js` - Routes
+
+## Key API Endpoints
+- `GET /api/judges` - 6 detailed judge profiles
+- `GET /api/judge-summary?limit=200` - 128+ judges from CSV
+- `GET /api/judge-summary/{judge_name}` - Single judge stats
+- `POST /api/cases/{case_id}/analyze` - LLM analysis with BERT
