@@ -15,10 +15,12 @@ class ECourtsAPIClient:
     """Client for interacting with eCourts India API"""
     
     def __init__(self):
-        # Base URL for eCourts API (you'll need to configure this)
-        self.base_url = os.environ.get('ECOURTS_API_URL', 'https://api.ecourtsindia.com')
+        # Official eCourts Web API base URL
+        self.base_url = os.environ.get('ECOURTS_API_URL', 'https://webapi.ecourtsindia.com')
         self.api_key = os.environ.get('ECOURTS_API_KEY', '')
         self.timeout = 30
+        # API is available if we have a valid key
+        self.api_available = bool(self.api_key and self.api_key.startswith('eci_'))
         
     def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
         """Make HTTP request to eCourts API"""
@@ -71,6 +73,11 @@ class ECourtsAPIClient:
         Returns:
             Dictionary containing case details or None if not found
         """
+        # Check if API is available
+        if not self.api_available:
+            logger.info("eCourts API key not configured - returning None")
+            return None
+            
         try:
             # Validate CNR format
             cnr = cnr.strip().upper()
@@ -80,10 +87,8 @@ class ECourtsAPIClient:
             
             logger.info(f"Fetching case details for CNR: {cnr}")
             
-            # Call eCourts API endpoint
-            # Note: This endpoint structure is based on common REST API patterns
-            # You may need to adjust based on actual eCourts API documentation
-            endpoint = f"/api/case/{cnr}"
+            # eCourts API endpoint format: /api/partner/case/{cnr}
+            endpoint = f"/api/partner/case/{cnr}"
             
             case_data = self._make_request(endpoint)
             
@@ -107,18 +112,18 @@ class ECourtsAPIClient:
         Returns:
             Dictionary containing case details with latest order analysis
         """
+        # Check if API is available
+        if not self.api_available:
+            logger.info("eCourts API key not configured - returning None")
+            return None
+            
         try:
             cnr = cnr.strip().upper()
             logger.info(f"Fetching case with latest order for CNR: {cnr}")
             
-            # Call API endpoint that includes order analysis
-            endpoint = f"/api/case/{cnr}/with-latest-order"
-            
-            case_data = self._make_request(endpoint)
-            
-            if not case_data:
-                # Fallback to basic case details if specialized endpoint not available
-                case_data = self.get_case_details(cnr)
+            # For now, use the same endpoint as get_case_details
+            # If eCourts provides a separate endpoint for latest order, update here
+            case_data = self.get_case_details(cnr)
             
             return case_data
             
