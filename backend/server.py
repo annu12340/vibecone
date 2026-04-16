@@ -61,6 +61,79 @@ class Case(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
+# --- Fine Models ---
+class FineCreate(BaseModel):
+    case_id: str
+    case_title: str
+    convicted_party: str
+    amount: float
+    description: Optional[str] = None
+
+
+class Fine(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    case_id: str
+    case_title: str
+    convicted_party: str
+    amount: float
+    description: Optional[str] = None
+    allocation: Dict[str, float] = Field(default_factory=lambda: {})
+    date_collected: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    status: str = "collected"
+
+
+# --- Prisoner Models ---
+class BehaviorRecord(BaseModel):
+    date: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    recorded_by: str
+    description: str
+    type: str  # "positive" or "negative"
+
+
+class PrisonerCreate(BaseModel):
+    name: str
+    prisoner_id_number: str
+    case_id: Optional[str] = None
+    admission_date: str
+    expected_release_date: Optional[str] = None
+
+
+class Prisoner(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    prisoner_id_number: str
+    case_id: Optional[str] = None
+    admission_date: str
+    expected_release_date: Optional[str] = None
+    actual_release_date: Optional[str] = None
+    status: str = "imprisoned"  # imprisoned, released
+    good_behavior_certified: bool = False
+    behavior_records: List[BehaviorRecord] = []
+    reward_received: float = 0.0
+    rewarded: bool = False
+    created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
+
+# --- Reward Distribution Models ---
+class LotteryWinner(BaseModel):
+    prisoner_id: str
+    prisoner_name: str
+    amount: float
+
+
+class RewardDistribution(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    distribution_date: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    lottery_round: int
+    fund_balance_before: float
+    amount_distributed: float
+    amount_per_prisoner: float
+    selected_prisoners: List[LotteryWinner]
+
+
 # --- Routes ---
 @api_router.get("/")
 async def root():
@@ -215,6 +288,262 @@ async def seed_database():
     if laws:
         await db.laws.insert_many(laws)
     return {"message": f"Seeded {len(judges)} judges and {len(laws)} laws"}
+
+
+# --- Fine Management Routes ---
+@api_router.post("/fines")
+async def create_fine(fine_input: FineCreate):
+    """Record a fine collected from a case and allocate 30% to reward fund"""
+    fine = Fine(**fine_input.model_dump())
+    
+    # Calculate allocation: 30% to reward fund, 70% to government
+    reward_fund_amount = fine.amount * 0.30
+    government_amount = fine.amount * 0.70
+    
+    fine.allocation = {
+        "reward_fund": reward_fund_amount,
+        "government": government_amount
+    }
+    
+    doc = fine.model_dump()
+    await db.fines.insert_one(doc)
+    
+    # Update reward fund balance
+    reward_fund = await db.reward_fund.find_one({})
+    if not reward_fund:
+        # Initialize reward fund if doesn't exist
+        reward_fund = {
+            "total_balance": reward_fund_amount,
+            "total_collected_from_fines": reward_fund_amount,
+            "total_distributed": 0.0,
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+        await db.reward_fund.insert_one(reward_fund)
+    else:
+        # Update existing fund
+        await db.reward_fund.update_one(
+            {},
+            {
+                "$inc": {
+                    "total_balance": reward_fund_amount,
+                    "total_collected_from_fines": reward_fund_amount
+                },
+                "$set": {"last_updated": datetime.now(timezone.utc).isoformat()}
+            }
+        )
+    
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+
+@api_router.get("/fines")
+async def get_fines():
+    """Get all fines with latest first"""
+    fines = await db.fines.find({}, {"_id": 0}).sort("date_collected", -1).to_list(100)
+    return fines
+
+
+@api_router.get("/fines/{fine_id}")
+async def get_fine(fine_id: str):
+    fine = await db.fines.find_one({"id": fine_id}, {"_id": 0})
+    if not fine:
+        raise HTTPException(status_code=404, detail="Fine not found")
+    return fine
+
+
+# --- Prisoner Management Routes ---
+@api_router.post("/prisoners")
+async def create_prisoner(prisoner_input: PrisonerCreate):
+    """Add a new prisoner to the system"""
+    prisoner = Prisoner(**prisoner_input.model_dump())
+    doc = prisoner.model_dump()
+    await db.prisoners.insert_one(doc)
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+
+@api_router.get("/prisoners")
+async def get_prisoners(status: Optional[str] = None):
+    """Get all prisoners, optionally filtered by status"""
+    query = {}
+    if status:
+        query["status"] = status
+    prisoners = await db.prisoners.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return prisoners
+
+
+@api_router.get("/prisoners/eligible")
+async def get_eligible_prisoners():
+    """Get prisoners eligible for reward lottery (released + certified + not yet rewarded)"""
+    prisoners = await db.prisoners.find(
+        {
+            "status": "released",
+            "good_behavior_certified": True,
+            "rewarded": False
+        },
+        {"_id": 0}
+    ).to_list(100)
+    return prisoners
+
+
+@api_router.get("/prisoners/{prisoner_id}")
+async def get_prisoner(prisoner_id: str):
+    prisoner = await db.prisoners.find_one({"id": prisoner_id}, {"_id": 0})
+    if not prisoner:
+        raise HTTPException(status_code=404, detail="Prisoner not found")
+    return prisoner
+
+
+@api_router.put("/prisoners/{prisoner_id}")
+async def update_prisoner(prisoner_id: str, updates: dict):
+    """Update prisoner details (status, release date, etc.)"""
+    prisoner = await db.prisoners.find_one({"id": prisoner_id}, {"_id": 0})
+    if not prisoner:
+        raise HTTPException(status_code=404, detail="Prisoner not found")
+    
+    # Filter allowed updates
+    allowed_fields = ["status", "actual_release_date", "expected_release_date", "good_behavior_certified"]
+    update_data = {k: v for k, v in updates.items() if k in allowed_fields}
+    
+    if update_data:
+        await db.prisoners.update_one(
+            {"id": prisoner_id},
+            {"$set": update_data}
+        )
+    
+    updated_prisoner = await db.prisoners.find_one({"id": prisoner_id}, {"_id": 0})
+    return updated_prisoner
+
+
+@api_router.post("/prisoners/{prisoner_id}/behavior")
+async def add_behavior_record(prisoner_id: str, record: BehaviorRecord):
+    """Add a behavior record for a prisoner (used by jailers)"""
+    prisoner = await db.prisoners.find_one({"id": prisoner_id}, {"_id": 0})
+    if not prisoner:
+        raise HTTPException(status_code=404, detail="Prisoner not found")
+    
+    await db.prisoners.update_one(
+        {"id": prisoner_id},
+        {"$push": {"behavior_records": record.model_dump()}}
+    )
+    
+    return {"message": "Behavior record added", "record": record.model_dump()}
+
+
+@api_router.put("/prisoners/{prisoner_id}/certify")
+async def certify_good_behavior(prisoner_id: str):
+    """Certify a prisoner for good behavior (typically at release)"""
+    prisoner = await db.prisoners.find_one({"id": prisoner_id}, {"_id": 0})
+    if not prisoner:
+        raise HTTPException(status_code=404, detail="Prisoner not found")
+    
+    await db.prisoners.update_one(
+        {"id": prisoner_id},
+        {"$set": {"good_behavior_certified": True}}
+    )
+    
+    return {"message": "Prisoner certified for good behavior", "prisoner_id": prisoner_id}
+
+
+# --- Reward Fund Routes ---
+@api_router.get("/reward-fund/status")
+async def get_reward_fund_status():
+    """Get current reward fund balance and statistics"""
+    fund = await db.reward_fund.find_one({}, {"_id": 0})
+    if not fund:
+        return {
+            "total_balance": 0.0,
+            "total_collected_from_fines": 0.0,
+            "total_distributed": 0.0,
+            "last_updated": datetime.now(timezone.utc).isoformat()
+        }
+    return fund
+
+
+@api_router.post("/reward-distributions/lottery")
+async def run_lottery():
+    """Run lottery to select 3 random prisoners and distribute rewards equally"""
+    import random
+    
+    # Get eligible prisoners
+    eligible = await db.prisoners.find(
+        {
+            "status": "released",
+            "good_behavior_certified": True,
+            "rewarded": False
+        },
+        {"_id": 0}
+    ).to_list(100)
+    
+    if len(eligible) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Not enough eligible prisoners for lottery. Need 3, found {len(eligible)}"
+        )
+    
+    # Get current fund balance
+    fund = await db.reward_fund.find_one({})
+    if not fund or fund.get("total_balance", 0) <= 0:
+        raise HTTPException(status_code=400, detail="Insufficient reward fund balance")
+    
+    current_balance = fund["total_balance"]
+    amount_per_prisoner = current_balance / 3
+    
+    # Select 3 random prisoners
+    selected = random.sample(eligible, 3)
+    
+    # Create distribution record
+    distribution_count = await db.reward_distributions.count_documents({})
+    winners = [
+        LotteryWinner(
+            prisoner_id=p["id"],
+            prisoner_name=p["name"],
+            amount=amount_per_prisoner
+        )
+        for p in selected
+    ]
+    
+    distribution = RewardDistribution(
+        lottery_round=distribution_count + 1,
+        fund_balance_before=current_balance,
+        amount_distributed=current_balance,
+        amount_per_prisoner=amount_per_prisoner,
+        selected_prisoners=winners
+    )
+    
+    doc = distribution.model_dump()
+    await db.reward_distributions.insert_one(doc)
+    
+    # Update prisoners as rewarded
+    for prisoner in selected:
+        await db.prisoners.update_one(
+            {"id": prisoner["id"]},
+            {
+                "$set": {
+                    "rewarded": True,
+                    "reward_received": amount_per_prisoner
+                }
+            }
+        )
+    
+    # Update reward fund (deduct distributed amount, reset balance to 0)
+    await db.reward_fund.update_one(
+        {},
+        {
+            "$inc": {"total_distributed": current_balance},
+            "$set": {
+                "total_balance": 0.0,
+                "last_updated": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+
+@api_router.get("/reward-distributions")
+async def get_reward_distributions():
+    """Get history of all lottery distributions"""
+    distributions = await db.reward_distributions.find({}, {"_id": 0}).sort("distribution_date", -1).to_list(100)
+    return distributions
 
 
 # --- Background Council Analysis Task ---
