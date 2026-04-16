@@ -122,7 +122,7 @@ backend:
   - task: "eCourts API Integration with Indian Kanoon Fallback"
     implemented: true
     working: true
-    file: "backend/server.py, backend/ecourts_helper.py, backend/llm_council.py"
+    file: "backend/server.py, backend/ecourts_helper.py, backend/ecourts_api_client.py, backend/llm_council.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -133,6 +133,9 @@ backend:
       - working: true
         agent: "main"
         comment: "ENHANCED LLM INTEGRATION: Updated Case model to accept ecourts_metadata field containing comprehensive case information. Enhanced build_case_prompt() in llm_council.py to include: Timeline (filing, registration, hearings, decision dates), Parties information (petitioners/respondents with advocates), Case progress (stage, order count, judicial section), Latest order AI analysis (summary, reasoning, ratio decidendi), Case AI analysis (summary, type, complexity, key issues), Subordinate court details. LLM Legal Council now receives complete eCourts context for comprehensive analysis."
+      - working: true
+        agent: "main"
+        comment: "CONVERTED TO BACKEND API: Replaced MCP tool dependency with proper backend API integration. Created ecourts_api_client.py - HTTP client for eCourts API with get_case_details(), get_case_with_latest_order(), search_cases() methods. New endpoint POST /api/ecourts/fetch-case/{cnr} for direct eCourts API calls (bypasses cache). Updated merged endpoint with 3-tier strategy: Tier 1 (Cache <100ms), Tier 2 (Live eCourts API 1-3s), Tier 3 (Indian Kanoon fallback 2-5s). Automatic caching of live API results. Configuration via ECOURTS_API_URL and ECOURTS_API_KEY env vars. Production-ready with error handling, logging, timeout management. Documentation in ECOURTS_BACKEND_API.md."
 
   - task: "Indian Kanoon API Integration"
     implemented: true

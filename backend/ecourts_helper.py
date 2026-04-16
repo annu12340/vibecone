@@ -3,7 +3,7 @@ eCourts Helper Module
 This module contains helper functions to transform eCourts data into a unified format
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import logging
 
 logger = logging.getLogger(__name__)

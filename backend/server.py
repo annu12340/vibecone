@@ -13,6 +13,7 @@ from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import requests
 from ecourts_helper import transform_ecourts_to_unified_format
+from ecourts_api_client import ecourts_client
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -367,16 +368,73 @@ async def search_indian_kanoon(search_input: IndianKanoonSearch):
 class CaseSearchByCNR(BaseModel):
     cnr: str
 
+@api_router.post("/ecourts/fetch-case/{cnr}")
+async def fetch_case_from_ecourts(cnr: str):
+    """
+    Fetch case directly from eCourts API (not from cache).
+    This endpoint makes a live call to eCourts service.
+    """
+    cnr = cnr.strip().upper()
+    logger.info(f"Fetching case from eCourts API for CNR: {cnr}")
+    
+    try:
+        # Fetch from eCourts API
+        ecourts_raw_data = ecourts_client.get_case_with_latest_order(cnr)
+        
+        if not ecourts_raw_data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Case not found in eCourts for CNR: {cnr}"
+            )
+        
+        # Transform to unified format
+        transformed_data = transform_ecourts_to_unified_format(ecourts_raw_data)
+        
+        # Cache the result for future use
+        cache_doc = {
+            "cnr": cnr,
+            "data": transformed_data,
+            "cached_at": datetime.now(timezone.utc).isoformat(),
+            "source": "ecourts"
+        }
+        
+        await db.ecourts_cache.update_one(
+            {"cnr": cnr},
+            {"$set": cache_doc},
+            upsert=True
+        )
+        
+        logger.info(f"Successfully fetched and cached eCourts data for CNR: {cnr}")
+        
+        return {
+            "success": True,
+            "source": "ecourts_live",
+            "message": "Case fetched from eCourts API",
+            "data": transformed_data,
+            "cached": False
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching from eCourts API: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching case from eCourts: {str(e)}"
+        )
+
+
 @api_router.post("/cases/search-by-cnr")
 async def search_case_by_cnr(search_input: CaseSearchByCNR):
     """
     Search for case by CNR using eCourts first, fallback to Indian Kanoon.
+    First checks cache, then tries live eCourts API, then falls back to Indian Kanoon.
     Returns comprehensive case details including latest order analysis.
     """
     cnr = search_input.cnr.strip().upper()
     logger.info(f"Searching for case with CNR: {cnr}")
     
-    # Try eCourts first - check if we have cached data
+    # Step 1: Try eCourts cache first
     ecourts_data = None
     ecourts_error = None
     
@@ -399,18 +457,59 @@ async def search_case_by_cnr(search_input: CaseSearchByCNR):
         ecourts_error = f"eCourts cache lookup error: {str(e)}"
         logger.warning(f"eCourts cache lookup failed for CNR {cnr}: {ecourts_error}")
     
-    # If eCourts succeeded, return the data
+    # If cache is empty or stale, return cached data if available
     if ecourts_data:
         return {
             "success": True,
             "source": "ecourts",
-            "message": "Case found successfully from eCourts",
+            "message": "Case found successfully from eCourts cache",
             "data": ecourts_data,
             "fallback_attempted": False,
             "cached": True
         }
     
-    # Fallback to Indian Kanoon
+    # Step 2: Try live eCourts API if cache miss or stale
+    logger.info(f"Cache miss or stale, trying live eCourts API for CNR: {cnr}")
+    try:
+        ecourts_raw_data = ecourts_client.get_case_with_latest_order(cnr)
+        
+        if ecourts_raw_data:
+            logger.info(f"Successfully fetched from live eCourts API for CNR: {cnr}")
+            
+            # Transform data
+            transformed_data = transform_ecourts_to_unified_format(ecourts_raw_data)
+            
+            # Cache for future use
+            cache_doc = {
+                "cnr": cnr,
+                "data": transformed_data,
+                "cached_at": datetime.now(timezone.utc).isoformat(),
+                "source": "ecourts"
+            }
+            
+            try:
+                await db.ecourts_cache.update_one(
+                    {"cnr": cnr},
+                    {"$set": cache_doc},
+                    upsert=True
+                )
+                logger.info(f"Cached fresh eCourts data for CNR: {cnr}")
+            except Exception as cache_error:
+                logger.warning(f"Failed to cache eCourts data: {cache_error}")
+            
+            return {
+                "success": True,
+                "source": "ecourts_live",
+                "message": "Case found successfully from eCourts API",
+                "data": transformed_data,
+                "fallback_attempted": False,
+                "cached": False
+            }
+    except Exception as e:
+        ecourts_error = f"Live eCourts API error: {str(e)}"
+        logger.warning(f"Live eCourts fetch failed for CNR {cnr}: {ecourts_error}")
+    
+    # Step 3: Fallback to Indian Kanoon
     logger.info(f"eCourts data not available, falling back to Indian Kanoon for CNR: {cnr}")
     try:
         indian_kanoon_result = await search_indian_kanoon(IndianKanoonSearch(cnr=cnr))
