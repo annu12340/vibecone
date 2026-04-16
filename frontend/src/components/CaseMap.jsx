@@ -1,79 +1,63 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useCallback } from "react";
 import axios from "axios";
+import { ComposableMap, Geographies, Geography } from "react-simple-maps";
 import { MapPin, Loader2 } from "lucide-react";
-import { STATE_POSITIONS, INDIA_OUTLINE } from "./map/stateData";
 import { StatePanel } from "./map/StatePanel";
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const INDIA_TOPO = "/india-states.json";
 
-function MapMarker({ state, count, x, y, maxCount, isSelected, onClick }) {
-  const minR = 8;
-  const maxR = 24;
-  const r = maxCount > 0 ? minR + ((count / maxCount) * (maxR - minR)) : minR;
-  const intensity = maxCount > 0 ? Math.min(count / maxCount, 1) : 0;
+const PROJECTION_CONFIG = {
+  scale: 1200,
+  center: [82.5, 22],
+};
 
-  // Color interpolation from gold to deep red based on density
-  const hue = 40 - (intensity * 30); // 40 (gold) to 10 (red-ish)
-  const sat = 60 + (intensity * 30);
+function getStateColor(count, maxCount) {
+  if (!count) return "#E8E6E1";
+  const intensity = Math.min(count / Math.max(maxCount, 1), 1);
+  if (intensity > 0.6) return "#B45309";
+  if (intensity > 0.3) return "#D97706";
+  if (intensity > 0) return "#C5A059";
+  return "#E8E6E1";
+}
+
+const MemoGeography = memo(function MemoGeo({ geo, stateData, maxCount, selectedState, onClick }) {
+  const stName = geo.properties.st_nm;
+  const cases = stateData[stName] || [];
+  const count = cases.length;
+  const isSelected = selectedState === stName;
+  const fill = getStateColor(count, maxCount);
 
   return (
-    <g
-      className="cursor-pointer"
-      onClick={() => onClick(state)}
-      data-testid={`map-marker-${state.replace(/\s+/g, "-").toLowerCase()}`}
-    >
-      {/* Glow ring */}
-      <circle
-        cx={x} cy={y} r={r + 4}
-        fill="none"
-        stroke={isSelected ? "#C5A059" : "transparent"}
-        strokeWidth={2}
-        className="transition-all duration-300"
-      />
-      {/* Pulse animation for selected */}
-      {isSelected && (
-        <circle cx={x} cy={y} r={r + 6} fill="none" stroke="#C5A059" strokeWidth={1} opacity={0.4}>
-          <animate attributeName="r" from={r + 6} to={r + 16} dur="1.5s" repeatCount="indefinite" />
-          <animate attributeName="opacity" from="0.4" to="0" dur="1.5s" repeatCount="indefinite" />
-        </circle>
-      )}
-      {/* Main circle */}
-      <circle
-        cx={x} cy={y} r={r}
-        fill={`hsl(${hue}, ${sat}%, 45%)`}
-        fillOpacity={0.85}
-        stroke="#fff"
-        strokeWidth={1.5}
-        className="transition-all duration-300 hover:fill-opacity-100"
-      />
-      {/* Count label */}
-      {count > 0 && (
-        <text
-          x={x} y={y + 1}
-          textAnchor="middle"
-          dominantBaseline="central"
-          fill="#fff"
-          fontSize={r > 14 ? 10 : 8}
-          fontWeight="bold"
-          className="pointer-events-none select-none"
-        >
-          {count}
-        </text>
-      )}
-      {/* State label below */}
-      <text
-        x={x} y={y + r + 12}
-        textAnchor="middle"
-        fill={isSelected ? "#0B192C" : "#64748B"}
-        fontSize={9}
-        fontWeight={isSelected ? "600" : "400"}
-        className="pointer-events-none select-none"
-      >
-        {state}
-      </text>
-    </g>
+    <Geography
+      geography={geo}
+      onClick={() => { if (count > 0) onClick(stName); }}
+      style={{
+        default: {
+          fill: isSelected ? "#0B192C" : fill,
+          stroke: "#FFFFFF",
+          strokeWidth: 0.8,
+          outline: "none",
+          cursor: count > 0 ? "pointer" : "default",
+        },
+        hover: {
+          fill: count > 0 ? (isSelected ? "#0B192C" : "#C5A059") : fill,
+          stroke: "#FFFFFF",
+          strokeWidth: count > 0 ? 1.5 : 0.8,
+          outline: "none",
+          cursor: count > 0 ? "pointer" : "default",
+        },
+        pressed: {
+          fill: "#0B192C",
+          stroke: "#C5A059",
+          strokeWidth: 1.5,
+          outline: "none",
+        },
+      }}
+      data-testid={`map-state-${stName.replace(/\s+/g, "-").toLowerCase()}`}
+    />
   );
-}
+});
 
 export default function CaseMap() {
   const [stateData, setStateData] = useState({});
@@ -94,13 +78,13 @@ export default function CaseMap() {
     fetchData();
   }, []);
 
-  const maxCount = Math.max(1, ...Object.values(stateData).map(cases => cases.length));
-  const totalCases = Object.values(stateData).reduce((sum, cases) => sum + cases.length, 0);
+  const maxCount = Math.max(1, ...Object.values(stateData).map(c => c.length));
+  const totalCases = Object.values(stateData).reduce((sum, c) => sum + c.length, 0);
   const statesWithCases = Object.keys(stateData).length;
 
-  const handleStateClick = (state) => {
+  const handleStateClick = useCallback((state) => {
     setSelectedState(prev => prev === state ? null : state);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]" data-testid="case-map-page">
@@ -111,10 +95,9 @@ export default function CaseMap() {
           <p className="text-xs tracking-[0.15em] uppercase text-[#C5A059] mb-2">Geographic Analysis</p>
           <h1 className="font-playfair text-3xl sm:text-4xl text-white">Cases Across India</h1>
           <p className="text-slate-400 text-sm mt-2 max-w-xl">
-            Explore how legal cases are distributed across Indian states. Click on a state marker to view case details and precedents.
+            Explore how legal cases are distributed across Indian states. Click on a state to view case details and precedents.
           </p>
 
-          {/* Stats row */}
           {!loading && (
             <div className="flex items-center gap-6 mt-5">
               <div>
@@ -139,88 +122,86 @@ export default function CaseMap() {
             <p className="text-sm text-slate-500">Loading case map...</p>
           </div>
         ) : (
-          <div className="bg-white border border-slate-200/60 shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)] p-6 sm:p-8">
+          <div className="bg-white border border-slate-200/60 shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)] p-4 sm:p-6">
             {/* Legend */}
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#C5A059]" />
-                <p className="text-xs uppercase tracking-wider text-slate-400 font-medium">India Case Distribution Map</p>
+                <p className="text-xs uppercase tracking-wider text-slate-400 font-medium">India Case Distribution</p>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "hsl(40, 60%, 45%)" }} />
-                  <span className="text-xs text-slate-500">Few cases</span>
+                  <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: "#E8E6E1" }} />
+                  <span className="text-xs text-slate-500">No cases</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "hsl(25, 75%, 45%)" }} />
+                  <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: "#C5A059" }} />
+                  <span className="text-xs text-slate-500">Few</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: "#D97706" }} />
                   <span className="text-xs text-slate-500">Moderate</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "hsl(10, 90%, 45%)" }} />
-                  <span className="text-xs text-slate-500">High density</span>
+                  <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: "#B45309" }} />
+                  <span className="text-xs text-slate-500">High</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: "#0B192C" }} />
+                  <span className="text-xs text-slate-500">Selected</span>
                 </div>
               </div>
             </div>
 
-            {/* SVG Map */}
-            <div className="flex justify-center">
-              <svg
-                viewBox="60 10 420 480"
-                className="w-full max-w-2xl"
+            {/* Map */}
+            <div className="flex justify-center" data-testid="india-map-container">
+              <ComposableMap
+                projection="geoMercator"
+                projectionConfig={PROJECTION_CONFIG}
+                width={600}
+                height={620}
+                style={{ width: "100%", maxWidth: "700px", height: "auto" }}
                 data-testid="india-map-svg"
               >
-                {/* India outline */}
-                <path
-                  d={INDIA_OUTLINE}
-                  fill="#F1F5F9"
-                  stroke="#CBD5E1"
-                  strokeWidth={1.5}
-                  strokeLinejoin="round"
-                />
-
-                {/* Grid lines for visual texture */}
-                {[100, 150, 200, 250, 300, 350, 400].map(y => (
-                  <line key={`h-${y}`} x1="70" y1={y} x2="440" y2={y} stroke="#E2E8F0" strokeWidth={0.3} strokeDasharray="4 4" />
-                ))}
-                {[150, 200, 250, 300, 350, 400].map(x => (
-                  <line key={`v-${x}`} x1={x} y1="20" x2={x} y2="470" stroke="#E2E8F0" strokeWidth={0.3} strokeDasharray="4 4" />
-                ))}
-
-                {/* State markers */}
-                {Object.entries(STATE_POSITIONS).map(([state, pos]) => {
-                  const cases = stateData[state] || [];
-                  if (cases.length === 0) {
-                    // Empty state - show small grey dot
-                    return (
-                      <g key={state}>
-                        <circle cx={pos.x} cy={pos.y} r={3} fill="#CBD5E1" fillOpacity={0.5} />
-                        <text
-                          x={pos.x} y={pos.y + 14}
-                          textAnchor="middle" fill="#94A3B8" fontSize={7}
-                          className="pointer-events-none select-none"
-                        >{state}</text>
-                      </g>
-                    );
+                <Geographies geography={INDIA_TOPO}>
+                  {({ geographies }) =>
+                    geographies.map((geo) => (
+                      <MemoGeography
+                        key={geo.rsmKey}
+                        geo={geo}
+                        stateData={stateData}
+                        maxCount={maxCount}
+                        selectedState={selectedState}
+                        onClick={handleStateClick}
+                      />
+                    ))
                   }
-                  return (
-                    <MapMarker
-                      key={state}
-                      state={state}
-                      count={cases.length}
-                      x={pos.x}
-                      y={pos.y}
-                      maxCount={maxCount}
-                      isSelected={selectedState === state}
-                      onClick={handleStateClick}
-                    />
-                  );
-                })}
-              </svg>
+                </Geographies>
+              </ComposableMap>
             </div>
 
-            {/* Hint text */}
+            {/* State labels for states with cases */}
+            {statesWithCases > 0 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-4 pt-4 border-t border-slate-100">
+                {Object.entries(stateData).map(([state, cases]) => (
+                  <button
+                    key={state}
+                    onClick={() => handleStateClick(state)}
+                    className={`text-xs px-3 py-1.5 border transition-colors ${
+                      selectedState === state
+                        ? "bg-[#0B192C] text-white border-[#0B192C]"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-[#C5A059] hover:text-[#0B192C]"
+                    }`}
+                    data-testid={`state-btn-${state.replace(/\s+/g, "-").toLowerCase()}`}
+                  >
+                    {state} ({cases.length})
+                  </button>
+                ))}
+              </div>
+            )}
+
             {!selectedState && statesWithCases > 0 && (
-              <p className="text-center text-xs text-slate-400 mt-4">Click on a state marker to view case details</p>
+              <p className="text-center text-xs text-slate-400 mt-3">Click on a colored state or button to view case details</p>
             )}
           </div>
         )}
