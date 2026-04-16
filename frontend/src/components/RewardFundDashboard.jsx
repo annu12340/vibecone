@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DollarSign, TrendingUp, Award, Users, Sparkles, AlertCircle } from 'lucide-react';
 
 const RewardFundDashboard = () => {
@@ -14,9 +14,9 @@ const RewardFundDashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const [fundRes, eligibleRes, distRes] = await Promise.all([
@@ -38,7 +38,7 @@ const RewardFundDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [BACKEND_URL]);
 
   const runLottery = async () => {
     if (eligiblePrisoners.length < 3) {

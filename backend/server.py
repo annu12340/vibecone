@@ -343,12 +343,17 @@ def transform_ecourts_to_unified_format(raw: dict) -> dict:
     cnr_val = case_data.get("cnr") or case_data.get("cnrNumber") or raw.get("cnr", "")
     pet_str = petitioners[0] if petitioners else ""
     res_str = respondents[0] if respondents else ""
+    
+    # Initialize title with default value
+    title = f"Case {cnr_val}" if cnr_val else "Unknown Case"
+    
+    # Build more specific title if parties are available
     if pet_str and res_str:
         title = f"{pet_str} vs {res_str}"
     elif pet_str:
         title = f"{pet_str} vs State"
-    else:
-        title = case_data.get("caseTitle") or case_data.get("title") or f"Case {cnr_val}"
+    elif case_data.get("caseTitle") or case_data.get("title"):
+        title = case_data.get("caseTitle") or case_data.get("title")
 
     # Court name
     court = (
