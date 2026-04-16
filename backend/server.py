@@ -317,8 +317,8 @@ def transform_ecourts_to_unified_format(raw: dict) -> dict:
             respondents.append(name)
 
     # Advocates
-    pet_advocates = [a.get("name") or str(a) for a in (case_data.get("petitionerAdvocates") or []) if a]
-    res_advocates = [a.get("name") or str(a) for a in (case_data.get("respondentAdvocates") or []) if a]
+    pet_advocates = [a.get("name") or str(a) if isinstance(a, dict) else str(a) for a in (case_data.get("petitionerAdvocates") or []) if a]
+    res_advocates = [a.get("name") or str(a) if isinstance(a, dict) else str(a) for a in (case_data.get("respondentAdvocates") or []) if a]
 
     # Judges
     judges = []
@@ -1210,6 +1210,47 @@ async def run_council_analysis(case_id: str, case_data: dict):
         scholar = members_data.get("legal_scholar", {}).get("analysis", {})
         similar_cases = scholar.get("precedent_cases", [])
         relevant_laws = scholar.get("applicable_laws", [])
+        
+        # Enhance with InLegalBERT semantic search
+        try:
+            from inlegal_bert_service import get_similar_cases_with_bert, get_related_laws_with_bert
+            
+            # Build query text from case data
+            case_description = case_data.get("description", "")
+            if not case_description:
+                # Fallback to case metadata if no description
+                parts = []
+                if case_data.get("title"):
+                    parts.append(case_data["title"])
+                if case_data.get("case_type"):
+                    parts.append(f"Type: {case_data['case_type']}")
+                if case_data.get("charges"):
+                    parts.append(f"Charges: {', '.join(case_data['charges'])}")
+                case_description = " | ".join(parts) if parts else "Unknown case"
+            
+            # Run BERT-based semantic search
+            logger.info(f"Running InLegalBERT semantic search for case {case_id}")
+            
+            bert_similar_cases = await get_similar_cases_with_bert(db, case_description, limit=5)
+            bert_related_laws = await get_related_laws_with_bert(db, case_description, limit=5)
+            
+            if bert_similar_cases:
+                logger.info(f"InLegalBERT found {len(bert_similar_cases)} similar cases")
+                # Merge with LLM-generated cases (LLM cases first, then BERT cases)
+                # Add source tag to distinguish
+                for case in bert_similar_cases:
+                    case['source'] = 'bert_semantic_search'
+                similar_cases = similar_cases + bert_similar_cases
+            
+            if bert_related_laws:
+                logger.info(f"InLegalBERT found {len(bert_related_laws)} related laws")
+                # Merge with LLM-generated laws
+                for law in bert_related_laws:
+                    law['source'] = 'bert_semantic_search'
+                relevant_laws = relevant_laws + bert_related_laws
+        
+        except Exception as e:
+            logger.warning(f"InLegalBERT semantic search failed (continuing without it): {str(e)}")
 
         await db.analyses.update_one(
             {"case_id": case_id},

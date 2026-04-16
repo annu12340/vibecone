@@ -297,47 +297,146 @@ class InLegalBERTService:
 inlegal_bert_service = InLegalBERTService()
 
 
-def get_similar_cases_with_bert(case_description: str, limit: int = 5) -> List[Dict[str, Any]]:
+async def get_similar_cases_with_bert(db, case_description: str, limit: int = 5) -> List[Dict[str, Any]]:
     """
     Helper function to find similar cases using InLegalBERT
     
     Args:
+        db: MongoDB database instance
         case_description: Description of the case to search for
         limit: Number of similar cases to return
         
     Returns:
         List of similar cases with similarity scores
     """
-    # This will be integrated with actual case database
-    # For now, returns empty list or mocked data
-    
     if not inlegal_bert_service.is_available():
         logger.warning("InLegalBERT not available for similar case search")
         return []
     
-    # TODO: Integrate with actual case database from MongoDB
-    # For now, return empty list
-    return []
+    try:
+        # Fetch all cases from MongoDB (excluding the _id field)
+        cases = await db.cases.find({}, {"_id": 0}).to_list(1000)
+        
+        if not cases:
+            logger.info("No cases found in database for similarity search")
+            return []
+        
+        # Prepare case database for BERT service
+        # Each case needs a text field for embedding
+        case_database = []
+        for case in cases:
+            # Build searchable text from case data
+            case_text_parts = []
+            
+            if case.get('title'):
+                case_text_parts.append(f"Title: {case['title']}")
+            if case.get('description'):
+                case_text_parts.append(f"Description: {case['description']}")
+            if case.get('case_type'):
+                case_text_parts.append(f"Type: {case['case_type']}")
+            if case.get('charges'):
+                charges = ", ".join(case['charges'])
+                case_text_parts.append(f"Charges: {charges}")
+            
+            # Add eCourts metadata if available
+            ecourts = case.get('ecourts_metadata', {})
+            if isinstance(ecourts, dict) and ecourts.get('acts_and_sections'):
+                acts = ", ".join(ecourts['acts_and_sections'])
+                case_text_parts.append(f"Acts: {acts}")
+            
+            case_text = " | ".join(case_text_parts)
+            
+            case_database.append({
+                'id': case.get('id'),
+                'title': case.get('title', 'Unknown'),
+                'case_type': case.get('case_type', ''),
+                'jurisdiction': case.get('jurisdiction', ''),
+                'status': case.get('status', ''),
+                'description': case.get('description', ''),
+                'text': case_text,  # This is what BERT will use
+            })
+        
+        logger.info(f"Searching {len(case_database)} cases for similarity to query")
+        
+        # Use BERT service to find similar cases
+        similar_cases = inlegal_bert_service.find_similar_cases(
+            query_text=case_description,
+            case_database=case_database,
+            top_k=limit
+        )
+        
+        logger.info(f"Found {len(similar_cases)} similar cases")
+        return similar_cases
+        
+    except Exception as e:
+        logger.error(f"Error in get_similar_cases_with_bert: {str(e)}")
+        return []
 
 
-def get_related_laws_with_bert(case_description: str, limit: int = 5) -> List[Dict[str, Any]]:
+async def get_related_laws_with_bert(db, case_description: str, limit: int = 5) -> List[Dict[str, Any]]:
     """
     Helper function to find related laws using InLegalBERT
     
     Args:
+        db: MongoDB database instance
         case_description: Description of the case or legal query
         limit: Number of related laws to return
         
     Returns:
         List of related laws with similarity scores
     """
-    # This will be integrated with actual laws database
-    # For now, returns empty list or mocked data
-    
     if not inlegal_bert_service.is_available():
         logger.warning("InLegalBERT not available for related laws search")
         return []
     
-    # TODO: Integrate with actual laws database from MongoDB
-    # For now, return empty list
-    return []
+    try:
+        # Fetch all laws from MongoDB (excluding the _id field)
+        laws = await db.laws.find({}, {"_id": 0}).to_list(200)
+        
+        if not laws:
+            logger.info("No laws found in database for similarity search")
+            return []
+        
+        # Prepare laws database for BERT service
+        # Each law needs a text field for embedding
+        laws_database = []
+        for law in laws:
+            # Build searchable text from law data
+            law_text_parts = []
+            
+            if law.get('code'):
+                law_text_parts.append(f"Code: {law['code']}")
+            if law.get('title'):
+                law_text_parts.append(f"Title: {law['title']}")
+            if law.get('summary'):
+                law_text_parts.append(f"Summary: {law['summary']}")
+            if law.get('category'):
+                law_text_parts.append(f"Category: {law['category']}")
+            
+            law_text = " | ".join(law_text_parts)
+            
+            laws_database.append({
+                'id': law.get('id'),
+                'code': law.get('code', ''),
+                'title': law.get('title', ''),
+                'category': law.get('category', ''),
+                'summary': law.get('summary', ''),
+                'max_penalty': law.get('max_penalty', ''),
+                'text': law_text,  # This is what BERT will use
+            })
+        
+        logger.info(f"Searching {len(laws_database)} laws for relevance to query")
+        
+        # Use BERT service to find related laws
+        related_laws = inlegal_bert_service.find_related_laws(
+            query_text=case_description,
+            laws_database=laws_database,
+            top_k=limit
+        )
+        
+        logger.info(f"Found {len(related_laws)} related laws")
+        return related_laws
+        
+    except Exception as e:
+        logger.error(f"Error in get_related_laws_with_bert: {str(e)}")
+        return []
