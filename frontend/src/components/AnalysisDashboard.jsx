@@ -240,6 +240,14 @@ export default function AnalysisDashboard() {
                   )}
                 </TabsTrigger>
                 <TabsTrigger
+                  value="judge"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-[#FAF9F6] data-[state=active]:shadow-none px-5 py-3.5 text-sm font-medium data-[state=active]:text-[#0B192C] text-slate-500 hover:text-slate-700 transition-colors"
+                  data-testid="tab-judge-profile"
+                >
+                  <User className="w-3.5 h-3.5 mr-2" />
+                  Judge Profile
+                </TabsTrigger>
+                <TabsTrigger
                   value="verdict"
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-[#FAF9F6] data-[state=active]:shadow-none px-5 py-3.5 text-sm font-medium data-[state=active]:text-[#0B192C] text-slate-500 hover:text-slate-700 transition-colors"
                   disabled={stage < 3}
@@ -250,14 +258,6 @@ export default function AnalysisDashboard() {
                   {chiefData?.status === "complete" && (
                     <span className="ml-2 text-[10px] bg-[#C5A059]/15 text-[#C5A059] px-1.5 py-0.5 rounded-sm font-semibold">Ready</span>
                   )}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="judge"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-[#FAF9F6] data-[state=active]:shadow-none px-5 py-3.5 text-sm font-medium data-[state=active]:text-[#0B192C] text-slate-500 hover:text-slate-700 transition-colors"
-                  data-testid="tab-judge-profile"
-                >
-                  <User className="w-3.5 h-3.5 mr-2" />
-                  Judge Profile
                 </TabsTrigger>
               </TabsList>
 
@@ -275,7 +275,15 @@ export default function AnalysisDashboard() {
                 <CrossReviewSection crossReviews={analysis?.cross_reviews} stage={stage} />
               </TabsContent>
 
-              {/* Tab 3: Verdict */}
+              {/* Tab 3: Judge Profile */}
+              <TabsContent value="judge" className="mt-6" data-testid="tab-content-judge">
+                <JudgeProfileTab
+                  judgeSnapshot={analysis?.judge_profile_snapshot}
+                  caseJudgeName={caseData?.judge_name}
+                />
+              </TabsContent>
+
+              {/* Tab 4: Verdict */}
               <TabsContent value="verdict" className="mt-6 space-y-6" data-testid="tab-content-verdict">
                 {/* Judge Intelligence above verdict */}
                 {analysis?.judge_profile_snapshot && (
@@ -285,14 +293,6 @@ export default function AnalysisDashboard() {
                   />
                 )}
                 <ChiefJusticeCard chiefData={chiefData} />
-              </TabsContent>
-
-              {/* Tab 4: Judge Profile */}
-              <TabsContent value="judge" className="mt-6" data-testid="tab-content-judge">
-                <JudgeProfileTab
-                  judgeSnapshot={analysis?.judge_profile_snapshot}
-                  caseJudgeName={caseData?.judge_name}
-                />
               </TabsContent>
             </Tabs>
           </div>
