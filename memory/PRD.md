@@ -15,61 +15,52 @@ Build a legal system app for common users that:
 - `seed_data.py` — Sample data (6 judges, 15 laws) with full bias intelligence profiles
 
 ### Frontend (React + Tailwind + Shadcn)
-- `App.js` — React Router (5 routes)
+- `App.js` — React Router (6 routes: /, /submit, /analysis/:id, /judges, /map, /history)
 - `components/Navbar.jsx` — Sticky nav with glassmorphism
 - `components/LandingPage.jsx` — Hero, features, how-it-works, CTA
 - `components/CaseSubmission.jsx` — Case submission form with Judge dropdown
-- `components/AnalysisDashboard.jsx` — Tabbed analysis view with gradient header
-- `components/analysis/` — Extracted components:
-  - `CouncilCard.jsx` — Analyst cards with ambient shadows
-  - `CrossReviewSection.jsx` — Cross-review deliberation cards
-  - `ChiefJusticeCard.jsx` — Gradient verdict card
-  - `JudgeIntelligencePanel.jsx` — Judge bias intelligence display
-  - `SidebarPanels.jsx` — Accordion sidebar (Case Facts, Similar Cases, Laws)
-  - `constants.js` — Shared config/styles
+- `components/AnalysisDashboard.jsx` — Tabbed analysis view with 4 tabs
+- `components/analysis/` — Extracted dashboard components
+- `components/CaseMap.jsx` — India case distribution map
+- `components/map/` — Map sub-components (StatePanel, stateData)
 - `components/JudgeProfiles.jsx` — Tabbed judge modal with bias analytics
 - `components/CaseHistory.jsx` — Past cases management
 
 ### Design System
-- **Background**: #FAF9F6 (warm off-white)
-- **Primary**: #0B192C (navy) with gradients to #12223A
-- **Accent**: #C5A059 (gold)
-- **Fonts**: Playfair Display (headings) + IBM Plex Sans (body)
-- **Surfaces**: Ambient shadows, soft borders (border-slate-200/60), glassmorphism navbar
-- **Archetype**: Jewel & Luxury / Premium Legal Authority
+- Background: #FAF9F6 (warm off-white)
+- Primary: #0B192C (navy) with gradients to #12223A
+- Accent: #C5A059 (gold)
+- Fonts: Playfair Display (headings) + IBM Plex Sans (body)
+- Ambient shadows, soft borders, glassmorphism navbar
 
 ## What's Been Implemented
 
+### India Case Map (April 2026)
+- [x] New page at /map with SVG India map showing case distribution by state
+- [x] Backend endpoint GET /api/cases/by-state aggregates filed cases + precedent cases from analyses
+- [x] State markers colored/sized by case density (gold→red gradient)
+- [x] Click marker → slide-out side panel with full case details
+- [x] Panel shows Filed Cases (with status, judge, View Analysis links) and Precedent Cases (with court, year, outcome)
+- [x] Legend, stats strip, empty state markers for all 30 Indian states
+- [x] Nav link added to navbar
+
+### Judge Profile Tab in Analysis (April 2026)
+- [x] 4th tab "Judge Profile" added between Cross-Review and Final Verdict
+- [x] Shows judge grade, name, court, bias risk, experience, education, ruling split
+- [x] Key observations and "View Full Judge Profile" CTA button
+
 ### Color & Professional Polish (April 2026)
-- [x] Warmer global background (#F8F9FA → #FAF9F6) across all pages
-- [x] Gradient dashboard header (from-[#0A1428] via-[#0B192C] to-[#11233D]) with warm gold glow orb
-- [x] Refined stage stepper with rounded circles, glow on active state, softer connectors
-- [x] Polished tab bar with subtle shadows, warmer active background
-- [x] Ambient card shadows (shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)])
-- [x] Thicker accent bars (h-1 → h-1.5) on council cards
-- [x] Gradient Chief Justice card with warm glow overlay
-- [x] Gradient Judge Intelligence panel header
-- [x] Refined Navbar glassmorphism (bg-white/80, backdrop-blur-2xl, shadow-sm)
-- [x] Gradient CTA button in navbar
-- [x] Warmer text tones (slate-300 → slate-200) in dark cards
+- [x] Warmer background, gradient headers, ambient shadows, glassmorphism navbar
+- [x] Consistent across all 6 pages
 
 ### Analysis Dashboard Redesign (April 2026)
-- [x] Tabbed interface (Council Analysis | Cross-Review | Final Verdict)
-- [x] Stage stepper visualization
-- [x] Sidebar with accordion panels
-- [x] Smart Judge Intelligence positioning (sidebar vs main content)
-- [x] Auto-tab selection, tab badges
-- [x] Component extraction (~900 lines → 6 focused files)
+- [x] Tabbed interface (Council Analysis | Cross-Review | Judge Profile | Final Verdict)
+- [x] Stage stepper, accordion sidebar, auto-tab selection
 
 ### Core Features (All Complete)
-- [x] Landing page with hero, features, council overview, CTA
-- [x] Case submission form with Judge dropdown
-- [x] 3-stage LLM Council analysis pipeline
-- [x] Cross-review deliberation (Stage 2)
-- [x] Judge profile integration into synthesis
-- [x] Deep judge bias detection (report cards, timelines, temporal patterns)
-- [x] Real-time analysis polling
-- [x] Case history management
+- [x] Landing page, case submission, 3-stage LLM Council analysis
+- [x] Cross-review deliberation, judge profile integration
+- [x] Deep judge bias detection, real-time polling
 - [x] 6 Indian judge profiles, 15 Indian laws auto-seeded
 
 ## Prioritized Backlog
