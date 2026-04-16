@@ -6,6 +6,7 @@ import CaseSubmission from "./components/CaseSubmission";
 import AnalysisDashboard from "./components/AnalysisDashboard";
 import JudgeProfiles from "./components/JudgeProfiles";
 import CaseHistory from "./components/CaseHistory";
+import CaseMap from "./components/CaseMap";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/submit" element={<CaseSubmission />} />
           <Route path="/analysis/:caseId" element={<AnalysisDashboard />} />
           <Route path="/judges" element={<JudgeProfiles />} />
+          <Route path="/map" element={<CaseMap />} />
           <Route path="/history" element={<CaseHistory />} />
         </Routes>
       </BrowserRouter>

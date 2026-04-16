@@ -81,6 +81,52 @@ async def get_cases():
     return cases
 
 
+@api_router.get("/cases/by-state")
+async def get_cases_by_state():
+    """Aggregate all cases and similar cases by Indian state."""
+    states = {}
+    cases = await db.cases.find({}, {"_id": 0}).to_list(500)
+    for c in cases:
+        state = _resolve_state(c.get("jurisdiction")) or _resolve_state(c.get("judge_name"))
+        if state:
+            states.setdefault(state, []).append({
+                "id": c.get("id"),
+                "title": c.get("title"),
+                "case_type": c.get("case_type", ""),
+                "jurisdiction": c.get("jurisdiction", ""),
+                "judge": c.get("judge_name", ""),
+                "status": c.get("status", "pending"),
+                "source": "filed",
+            })
+    analyses = await db.analyses.find(
+        {"status": "complete", "similar_cases": {"$exists": True, "$ne": []}},
+        {"_id": 0, "similar_cases": 1, "case_id": 1}
+    ).to_list(500)
+    for a in analyses:
+        for sc in a.get("similar_cases", []):
+            state = _resolve_state(sc.get("court")) or _resolve_state(sc.get("case_name"))
+            if state:
+                states.setdefault(state, []).append({
+                    "title": sc.get("case_name", "Unknown"),
+                    "case_type": "",
+                    "jurisdiction": sc.get("court", ""),
+                    "year": sc.get("year"),
+                    "outcome": sc.get("outcome", ""),
+                    "source": "similar",
+                })
+    result = {}
+    for state, case_list in states.items():
+        seen = set()
+        deduped = []
+        for c in case_list:
+            key = c.get("title", "")
+            if key not in seen:
+                seen.add(key)
+                deduped.append(c)
+        result[state] = deduped
+    return {"states": result}
+
+
 @api_router.get("/cases/{case_id}")
 async def get_case(case_id: str):
     case = await db.cases.find_one({"id": case_id}, {"_id": 0})
@@ -328,6 +374,84 @@ async def startup_event():
 
 
 app.include_router(api_router)
+
+# --- Court-to-State mapping for India Map ---
+COURT_STATE_MAP = {
+    "supreme court of india": "Delhi",
+    "supreme court": "Delhi",
+    "high court - delhi": "Delhi",
+    "delhi high court": "Delhi",
+    "high court - bombay": "Maharashtra",
+    "bombay high court": "Maharashtra",
+    "high court - madras": "Tamil Nadu",
+    "madras high court": "Tamil Nadu",
+    "high court - calcutta": "West Bengal",
+    "calcutta high court": "West Bengal",
+    "high court - karnataka": "Karnataka",
+    "karnataka high court": "Karnataka",
+    "high court - kerala": "Kerala",
+    "kerala high court": "Kerala",
+    "high court - allahabad": "Uttar Pradesh",
+    "allahabad high court": "Uttar Pradesh",
+    "high court - patna": "Bihar",
+    "patna high court": "Bihar",
+    "high court - rajasthan": "Rajasthan",
+    "rajasthan high court": "Rajasthan",
+    "high court - gujarat": "Gujarat",
+    "gujarat high court": "Gujarat",
+    "high court - punjab and haryana": "Punjab",
+    "punjab and haryana high court": "Punjab",
+    "high court - hyderabad": "Telangana",
+    "telangana high court": "Telangana",
+    "high court - andhra pradesh": "Andhra Pradesh",
+    "andhra pradesh high court": "Andhra Pradesh",
+    "high court - orissa": "Odisha",
+    "orissa high court": "Odisha",
+    "high court - gauhati": "Assam",
+    "gauhati high court": "Assam",
+    "high court - madhya pradesh": "Madhya Pradesh",
+    "madhya pradesh high court": "Madhya Pradesh",
+    "high court - jharkhand": "Jharkhand",
+    "jharkhand high court": "Jharkhand",
+    "high court - chhattisgarh": "Chhattisgarh",
+    "chhattisgarh high court": "Chhattisgarh",
+    "high court - uttarakhand": "Uttarakhand",
+    "uttarakhand high court": "Uttarakhand",
+    "high court - himachal pradesh": "Himachal Pradesh",
+    "high court - goa": "Goa",
+    "high court - manipur": "Manipur",
+    "high court - meghalaya": "Meghalaya",
+    "high court - tripura": "Tripura",
+    "high court - sikkim": "Sikkim",
+    "new delhi": "Delhi",
+    "mumbai": "Maharashtra",
+    "chennai": "Tamil Nadu",
+    "kolkata": "West Bengal",
+    "bangalore": "Karnataka",
+    "bengaluru": "Karnataka",
+    "hyderabad": "Telangana",
+    "ahmedabad": "Gujarat",
+    "pune": "Maharashtra",
+    "lucknow": "Uttar Pradesh",
+    "jaipur": "Rajasthan",
+    "chandigarh": "Punjab",
+    "kochi": "Kerala",
+    "bhopal": "Madhya Pradesh",
+    "patna": "Bihar",
+    "guwahati": "Assam",
+}
+
+def _resolve_state(text):
+    """Map a court/jurisdiction/location string to an Indian state."""
+    if not text:
+        return None
+    t = text.lower().strip()
+    for key, state in COURT_STATE_MAP.items():
+        if key in t:
+            return state
+    return None
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
