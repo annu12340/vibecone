@@ -11,6 +11,7 @@ from typing import List, Optional, Dict, Any, Annotated
 import uuid
 from datetime import datetime, timezone
 from bson import ObjectId
+import requests
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -251,6 +252,112 @@ async def get_analysis(case_id: str):
     if not analysis:
         return {"case_id": case_id, "status": "not_started", "stage": 0, "members": {}}
     return analysis
+
+
+
+# --- Indian Kanoon API Integration ---
+class IndianKanoonSearch(BaseModel):
+    cnr: str
+
+@api_router.post("/indiankanoon/search")
+async def search_indian_kanoon(search_input: IndianKanoonSearch):
+    """Search Indian Kanoon API using CNR number"""
+    api_token = os.environ.get('INDIAN_KANOON_API_TOKEN')
+    if not api_token:
+        raise HTTPException(status_code=500, detail="Indian Kanoon API token not configured")
+    
+    base_url = "https://api.indiankanoon.org"
+    headers = {
+        "Authorization": f"Token {api_token}",
+        "Accept": "application/json"
+    }
+    
+    try:
+        # Search for the case using CNR
+        logger.info(f"Searching Indian Kanoon for CNR: {search_input.cnr}")
+        search_response = requests.post(
+            f"{base_url}/search/",
+            params={"formInput": search_input.cnr, "pagenum": 0},
+            headers=headers,
+            timeout=15
+        )
+        
+        if search_response.status_code != 200:
+            logger.error(f"Indian Kanoon search failed: {search_response.status_code} - {search_response.text}")
+            raise HTTPException(
+                status_code=search_response.status_code,
+                detail=f"Indian Kanoon API error: {search_response.text}"
+            )
+        
+        search_data = search_response.json()
+        
+        if not search_data.get("docs") or len(search_data["docs"]) == 0:
+            return {
+                "success": False,
+                "message": "No case found with this CNR",
+                "data": None
+            }
+        
+        # Get the first document ID
+        first_doc = search_data["docs"][0]
+        doc_id = first_doc.get("tid")
+        
+        if not doc_id:
+            return {
+                "success": False,
+                "message": "Document ID not found in search results",
+                "data": None
+            }
+        
+        logger.info(f"Found document ID: {doc_id}, fetching full details...")
+        
+        # Fetch full document details
+        doc_response = requests.post(
+            f"{base_url}/doc/{doc_id}/",
+            headers=headers,
+            timeout=15
+        )
+        
+        if doc_response.status_code != 200:
+            logger.error(f"Indian Kanoon doc fetch failed: {doc_response.status_code}")
+            raise HTTPException(
+                status_code=doc_response.status_code,
+                detail="Failed to fetch full document details"
+            )
+        
+        doc_data = doc_response.json()
+        
+        # Extract relevant information
+        result = {
+            "success": True,
+            "message": "Case found successfully",
+            "data": {
+                "doc_id": doc_id,
+                "title": doc_data.get("title", ""),
+                "doc_text": doc_data.get("doc", ""),
+                "court": first_doc.get("court", ""),
+                "bench": first_doc.get("bench", ""),
+                "date": first_doc.get("date", ""),
+                "citations": doc_data.get("citations", []),
+                "referred_acts": doc_data.get("referred_acts", []),
+                "referred_cases": doc_data.get("referred_cases", []),
+                "author": doc_data.get("author", ""),  # Judge name
+                "raw_search_result": first_doc,
+                "raw_doc_data": doc_data
+            }
+        }
+        
+        return result
+        
+    except requests.exceptions.Timeout:
+        logger.error("Indian Kanoon API request timed out")
+        raise HTTPException(status_code=504, detail="Indian Kanoon API request timed out")
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"Connection error to Indian Kanoon API: {e}")
+        raise HTTPException(status_code=503, detail="Unable to connect to Indian Kanoon API")
+    except Exception as e:
+        logger.error(f"Error searching Indian Kanoon: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 @api_router.get("/judges")

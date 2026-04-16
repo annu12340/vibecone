@@ -43,6 +43,10 @@ export default function CaseSubmission() {
     defendant_gender: "",
     defendant_age: "",
   });
+  const [cnr, setCnr] = useState("");
+  const [cnrLoading, setCnrLoading] = useState(false);
+  const [cnrError, setCnrError] = useState(null);
+  const [cnrSuccess, setCnrSuccess] = useState(null);
   const [chargeInput, setChargeInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -74,6 +78,48 @@ export default function CaseSubmission() {
 
   const removeCharge = (c) => {
     setForm((f) => ({ ...f, charges: f.charges.filter((x) => x !== c) }));
+  };
+
+  const fetchCaseFromIndianKanoon = async () => {
+    if (!cnr.trim()) {
+      setCnrError("Please enter a CNR number");
+      return;
+    }
+    
+    setCnrError(null);
+    setCnrSuccess(null);
+    setCnrLoading(true);
+
+    try {
+      const { data } = await axios.post(`${API}/indiankanoon/search`, { cnr: cnr.trim() });
+      
+      if (!data.success) {
+        setCnrError(data.message || "Case not found");
+        setCnrLoading(false);
+        return;
+      }
+
+      const caseData = data.data;
+      
+      // Pre-fill form fields only if they're empty
+      setForm((f) => ({
+        title: f.title || caseData.title || "",
+        description: f.description || caseData.doc_text || "",
+        case_type: f.case_type,
+        jurisdiction: f.jurisdiction || caseData.court || "",
+        judge_name: f.judge_name || caseData.author || "",
+        charges: f.charges.length > 0 ? f.charges : (caseData.referred_acts || []).slice(0, 5),
+        defendant_race: f.defendant_race,
+        defendant_gender: f.defendant_gender,
+        defendant_age: f.defendant_age,
+      }));
+
+      setCnrSuccess("Case information fetched successfully from Indian Kanoon!");
+      setCnrLoading(false);
+    } catch (err) {
+      setCnrError(err.response?.data?.detail || "Failed to fetch case from Indian Kanoon");
+      setCnrLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -123,6 +169,61 @@ export default function CaseSubmission() {
       {/* Form */}
       <div className="max-w-3xl mx-auto px-4 py-10">
         <form onSubmit={handleSubmit} className="space-y-6" data-testid="case-form">
+
+          {/* CNR Search - Indian Kanoon Integration */}
+          <div className="bg-gradient-to-r from-[#0B192C] to-[#1E293B] border-2 border-[#C5A059] p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Scale className="w-5 h-5 text-[#C5A059]" />
+              <label className="block text-xs tracking-widest uppercase text-[#C5A059] font-semibold">
+                Fetch Case from Indian Kanoon
+              </label>
+            </div>
+            <p className="text-xs text-slate-300 mb-4">
+              Enter the Case Number Reference (CNR) to automatically fetch case details from Indian Kanoon database.
+            </p>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={cnr}
+                onChange={(e) => setCnr(e.target.value)}
+                placeholder="e.g., DLCT020357252018"
+                className="flex-1 px-4 py-3 border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]"
+                data-testid="input-cnr"
+              />
+              <button
+                type="button"
+                onClick={fetchCaseFromIndianKanoon}
+                disabled={cnrLoading}
+                className="px-6 py-3 bg-[#C5A059] text-white text-sm font-semibold hover:bg-[#B8954F] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+                data-testid="fetch-cnr-button"
+              >
+                {cnrLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Fetching...
+                  </>
+                ) : (
+                  'Fetch Case Info'
+                )}
+              </button>
+            </div>
+            
+            {/* CNR Success Message */}
+            {cnrSuccess && (
+              <div className="mt-3 flex items-start gap-2 p-3 bg-green-900/40 border border-green-500/50 text-green-200" data-testid="cnr-success">
+                <Award className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="text-xs">{cnrSuccess}</span>
+              </div>
+            )}
+            
+            {/* CNR Error Message */}
+            {cnrError && (
+              <div className="mt-3 flex items-start gap-2 p-3 bg-red-900/40 border border-red-500/50 text-red-200" data-testid="cnr-error">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span className="text-xs">{cnrError}</span>
+              </div>
+            )}
+          </div>
 
           {/* Case Title */}
           <div className="bg-white border border-slate-200 p-6">

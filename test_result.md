@@ -111,8 +111,26 @@ user_problem_statement: |
   5. Runs a lottery system that randomly selects 3 eligible prisoners (released + certified)
   6. Distributes the reward fund balance equally among the 3 winners
   7. Provides complete UI for fine management, prisoner management, and reward fund dashboard
+  
+  Enhancement: Indian Kanoon API Integration
+  - Integrate Indian Kanoon API into the "Analyse Case" (/submit) page
+  - Add CNR input field at the top of the case submission form
+  - Fetch case information from Indian Kanoon when user enters CNR
+  - Pre-fill form fields with Indian Kanoon data (only empty fields)
 
 backend:
+  - task: "Indian Kanoon API Integration"
+    implemented: true
+    working: "NA"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented POST /api/indiankanoon/search endpoint. Accepts CNR number, searches Indian Kanoon API, fetches full document details, and returns case information including title, document text, court, judge name, referred acts, and citations. API token stored in backend/.env. Uses requests library with timeout and error handling."
+
   - task: "Fine Management API"
     implemented: true
     working: true
@@ -204,6 +222,18 @@ backend:
         comment: "TESTED: Distribution history API working correctly. Returns complete lottery distribution records with winners, amounts, and lottery round information. Verified multiple distribution records are properly stored and retrievable."
 
 frontend:
+  - task: "Indian Kanoon CNR Fetch Integration"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/CaseSubmission.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added CNR input field at the top of the case submission form. Implemented 'Fetch Case Info' button that calls /api/indiankanoon/search. Pre-fills form fields (title, description, jurisdiction, judge_name, charges) with Indian Kanoon data only if fields are empty. Shows success/error messages. Includes loading state during API call."
+
   - task: "Fine Management Page"
     implemented: true
     working: "NA"
@@ -259,7 +289,9 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Indian Kanoon API Integration"
+    - "Indian Kanoon CNR Fetch Integration"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -340,3 +372,30 @@ agent_communication:
       ✓ Eligible prisoners meet criteria: status=released AND good_behavior_certified=true AND rewarded=false
       
       The reward system backend is fully functional and ready for production use!
+  
+  - agent: "main"
+    message: |
+      NEW FEATURE IMPLEMENTED: Indian Kanoon API Integration
+      
+      BACKEND:
+      - Added POST /api/indiankanoon/search endpoint
+      - Searches Indian Kanoon API using CNR number
+      - Fetches full case document with all details
+      - Returns: title, doc_text, court, judge name, referred acts, citations
+      - API token configured in backend/.env: INDIAN_KANOON_API_TOKEN
+      - Includes proper error handling, timeout protection, and logging
+      
+      FRONTEND:
+      - Added CNR input field at top of /submit page (CaseSubmission.jsx)
+      - "Fetch Case Info" button to trigger Indian Kanoon search
+      - Pre-fills form fields with fetched data (only empty fields preserved)
+      - Success/error message display
+      - Loading state during API call
+      
+      TESTING NEEDED FOR NEW FEATURE:
+      - Test /api/indiankanoon/search with valid CNR (e.g., DLCT020357252018)
+      - Verify case data is fetched correctly from Indian Kanoon
+      - Test frontend CNR fetch button functionality
+      - Verify form fields are pre-filled correctly (only empty fields)
+      - Test error handling for invalid CNR
+      - Verify success/error messages display properly
