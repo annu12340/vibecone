@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Scale, BookOpen, Users, History, Menu, X, FileText } from "lucide-react";
+import { Scale, BookOpen, Users, History, Menu, X, FileText, DollarSign, UserCheck, Award } from "lucide-react";
 
 const NAV_LINKS = [
   { to: "/submit", label: "Analyze Case", icon: FileText },
   { to: "/judges", label: "Judge Profiles", icon: Users },
   { to: "/history", label: "Case History", icon: History },
+  { to: "/fines", label: "Fines", icon: DollarSign },
+  { to: "/prisoners", label: "Prisoners", icon: UserCheck },
+  { to: "/reward-fund", label: "Reward Fund", icon: Award },
 ];
 
 export default function Navbar() {
