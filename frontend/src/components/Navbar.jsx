@@ -48,32 +48,6 @@ export default function Navbar() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {/* Role Toggle */}
-            <div className="flex items-center gap-2 mr-4 px-3 py-1.5 bg-slate-100 rounded-full">
-              <button
-                onClick={toggleRole}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  isCommonUser
-                    ? "bg-[#0B192C] text-white"
-                    : "text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                <Users2 className="w-3 h-3" />
-                Common User
-              </button>
-              <button
-                onClick={toggleRole}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                  isAuthority
-                    ? "bg-[#0B192C] text-white"
-                    : "text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                <Building2 className="w-3 h-3" />
-                Authority
-              </button>
-            </div>
-
             {/* Navigation Links */}
             {navLinks.map(({ to, label, icon: Icon }) => (
               <Link
@@ -102,6 +76,25 @@ export default function Navbar() {
                 New Analysis
               </Link>
             )}
+
+            {/* Role Toggle - Subtle version on far right */}
+            <button
+              onClick={toggleRole}
+              className="ml-4 flex items-center gap-1.5 px-2 py-1 text-xs text-slate-400 hover:text-slate-600 transition-colors group"
+              title={`Switch to ${isCommonUser ? 'Authority' : 'Common User'}`}
+            >
+              {isCommonUser ? (
+                <>
+                  <Users2 className="w-3 h-3" />
+                  <span className="opacity-60 group-hover:opacity-100">User</span>
+                </>
+              ) : (
+                <>
+                  <Building2 className="w-3 h-3" />
+                  <span className="opacity-60 group-hover:opacity-100">Authority</span>
+                </>
+              )}
+            </button>
 
           </nav>
 
