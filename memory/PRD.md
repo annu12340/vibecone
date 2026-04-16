@@ -80,6 +80,16 @@ Build a legal system app for common users that:
 - Grade color coding: A=green, B=light-green, C=amber, D=orange, F=red
 - Outcome color coding: adverse=red, favorable=green
 
+### Stage 2 Cross-Review Deliberation (Completed — June 2026)
+- [x] **Cross-review system messages**: Each analyst has a tailored in-character cross-review prompt
+- [x] **`cross_review_member()` function** in `llm_council.py`: reads own Stage 1 + other 3 analyses, returns challenges/agreements/key_insight/revised_position
+- [x] **3-stage pipeline in `server.py`**: Stage 1 (parallel) → Stage 2 (parallel cross-reviews) → Stage 3 (Chief Justice with both stages)
+- [x] **`cross_reviews` field** in analysis doc, stored per-member as `{status, analysis}`
+- [x] **Updated Chief Justice prompt**: now synthesizes both Stage 1 analyses AND Stage 2 cross-review rebuttals, includes `cross_review_impact` field
+- [x] **`CrossReviewSection` component** on Analysis Dashboard: striped accent bar, 4 cards with challenges (✗), agreements (✓), key_insight in italics
+- [x] **Stage labels updated**: Stage 2 = "Cross-Review Deliberation" in progress bar
+- [x] **Chief Justice card**: renders `cross_review_impact` block after Final Verdict
+
 ## Prioritized Backlog
 
 ### P0 (Critical for core flow)
@@ -101,6 +111,5 @@ Build a legal system app for common users that:
 
 ## Next Action Items
 1. Fix LLM analysis timeout / graceful frontend error handling (P0)
-2. Add Stage 2 cross-review deliberation
-3. Add PDF document upload support
-4. Add user authentication for saved cases
+2. Add PDF document upload support
+3. Add user authentication for saved cases
