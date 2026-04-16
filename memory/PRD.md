@@ -31,7 +31,23 @@ Build a legal system app for common users that:
 4. **Analyst Veritas** — Judicial Bias Analyst
 5. **The Council** — Chief Justice Synthesizer (final verdict)
 
-## What's Been Implemented (April 2026)
+## What's Been Implemented (Updates — India Refresh)
+
+### Indian Data (Updated April 2026)
+- [x] 6 Indian SC/HC judge profiles: Chandrachud (15), Arun Mishra (81), Sanjiv Khanna (32), G.S. Patel (22), Hemant Gupta (74), Sudhanshu Dhulia (25)
+- [x] 15 Indian laws: IPC 302/376/420/498A, NDPS Act, Articles 14/21/22, CrPC 438/482, POCSO, Prevention of Corruption, DV Act, UAPA, IT Act
+- [x] LLM council prompts updated for Indian law (IPC, CrPC, SC precedents, caste/religion bias)
+- [x] Case submission: Indian case types (Criminal IPC, NDPS, POCSO, etc.), Indian courts, Caste/Community demographics
+- [x] Demographic bias analysis covers: General/Upper Caste, OBC, SC/ST, Muslim, Christian
+
+### UI Editorial Redesign (Updated April 2026)
+- [x] Landing page hero: Pure editorial typography, mock "Council in Session" terminal panel
+- [x] Indian stats strip: 4.7 Cr pending cases, 76% undertrials, 21 Yrs avg wait, 1:50K judge ratio
+- [x] Council roster: Editorial table format (NOT card grid) — hover reveals dark background
+- [x] Capabilities section: Asymmetric bento grid layout
+- [x] How It Works: Numbered steps with oversized decorative numbers
+- [x] Judge Intelligence teaser section with live bias preview
+- [x] Font: Playfair Display + IBM Plex Sans, Navy #0B192C + Gold #C5A059
 
 ### Core Features
 - [x] Landing page with hero, features grid, council overview, CTA
