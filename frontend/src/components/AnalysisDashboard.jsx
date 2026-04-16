@@ -15,18 +15,18 @@ const API = `${BACKEND_URL}/api`;
 
 function StageStep({ number, label, isActive, isComplete }) {
   return (
-    <div className="flex items-center gap-2" data-testid={`stage-step-${number}`}>
-      <div className={`w-7 h-7 flex items-center justify-center text-xs font-bold border-2 transition-all duration-500 ${
-        isComplete ? "bg-emerald-600 border-emerald-600 text-white" :
-        isActive ? "bg-[#C5A059] border-[#C5A059] text-[#0B192C]" :
-        "bg-transparent border-white/20 text-white/40"
+    <div className="flex items-center gap-2.5" data-testid={`stage-step-${number}`}>
+      <div className={`w-8 h-8 flex items-center justify-center text-xs font-bold border-2 transition-all duration-500 rounded-full ${
+        isComplete ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-400" :
+        isActive ? "border-[#C5A059] bg-[#C5A059]/10 text-[#C5A059] shadow-[0_0_12px_rgba(197,160,89,0.3)]" :
+        "bg-transparent border-white/15 text-white/30"
       }`}>
         {isComplete ? <CheckCircle2 className="w-3.5 h-3.5" /> : number}
       </div>
-      <span className={`text-xs tracking-wider uppercase transition-colors hidden sm:block ${
-        isComplete ? "text-emerald-400" :
+      <span className={`text-xs tracking-wider uppercase transition-colors hidden sm:block font-medium ${
+        isComplete ? "text-emerald-400/90" :
         isActive ? "text-[#C5A059]" :
-        "text-white/30"
+        "text-white/25"
       }`}>{label}</span>
     </div>
   );
@@ -34,7 +34,7 @@ function StageStep({ number, label, isActive, isComplete }) {
 
 function StageConnector({ isComplete }) {
   return (
-    <div className={`flex-1 h-px max-w-12 transition-colors ${isComplete ? "bg-emerald-500" : "bg-white/10"}`} />
+    <div className={`flex-1 h-px max-w-16 transition-colors duration-500 ${isComplete ? "bg-emerald-500/40" : "bg-white/8"}`} />
   );
 }
 
@@ -131,7 +131,7 @@ export default function AnalysisDashboard() {
 
   if (pageStatus === "loading") {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
         <div className="text-center">
           <div className="flex gap-2 justify-center mb-4">
             <div className="w-2.5 h-2.5 rounded-full bg-[#0B192C] dot-1" />
@@ -146,7 +146,7 @@ export default function AnalysisDashboard() {
 
   if (pageStatus === "error" || !caseData) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAF9F6] flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
           <p className="text-slate-900 font-medium">Case not found or failed to load.</p>
@@ -159,10 +159,12 @@ export default function AnalysisDashboard() {
   const chiefData = analysis?.chief_justice || {};
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]" data-testid="analysis-dashboard">
+    <div className="min-h-screen bg-[#FAF9F6]" data-testid="analysis-dashboard">
       {/* Header */}
-      <div className="bg-[#0B192C] text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-8">
+      <div className="bg-gradient-to-br from-[#0A1428] via-[#0B192C] to-[#11233D] text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#C5A059]/8 blur-[100px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-[#C5A059]/5 blur-[80px] rounded-full pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-8 relative z-10">
           <Link to="/history" className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white text-sm mb-5 transition-colors" data-testid="back-to-history">
             <ArrowLeft className="w-3.5 h-3.5" /> Case History
           </Link>
@@ -176,10 +178,10 @@ export default function AnalysisDashboard() {
               )}
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              <span className={`text-xs px-3 py-1.5 border font-medium uppercase tracking-wider ${
-                overallStatus === "complete" ? "text-emerald-400 border-emerald-400/30 bg-emerald-400/10" :
-                overallStatus === "failed" ? "text-red-400 border-red-400/30 bg-red-400/10" :
-                "text-[#C5A059] border-[#C5A059]/30 bg-[#C5A059]/10"
+              <span className={`text-xs px-3.5 py-1.5 border font-semibold uppercase tracking-wider rounded-sm ${
+                overallStatus === "complete" ? "text-emerald-400 border-emerald-400/25 bg-emerald-400/10" :
+                overallStatus === "failed" ? "text-red-400 border-red-400/25 bg-red-400/10" :
+                "text-[#C5A059] border-[#C5A059]/20 bg-[#C5A059]/10"
               }`} data-testid="analysis-status">
                 {overallStatus === "analyzing" ? "Council in Session" : overallStatus === "complete" ? "Verdict Ready" : overallStatus === "failed" ? "Analysis Failed" : "Pending"}
               </span>
@@ -212,40 +214,40 @@ export default function AnalysisDashboard() {
           {/* Main column */}
           <div className="lg:col-span-2">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full bg-white border border-slate-200 rounded-none h-auto p-0 justify-start" data-testid="analysis-tabs">
+              <TabsList className="w-full bg-white border border-[rgba(11,25,44,0.08)] rounded-sm h-auto p-0 justify-start shadow-[0_1px_3px_rgba(11,25,44,0.04)]" data-testid="analysis-tabs">
                 <TabsTrigger
                   value="analysis"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-5 py-3.5 text-sm data-[state=active]:text-[#0B192C] text-slate-500"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-[#FAF9F6] data-[state=active]:shadow-none px-5 py-3.5 text-sm font-medium data-[state=active]:text-[#0B192C] text-slate-500 hover:text-slate-700 transition-colors"
                   data-testid="tab-stage-1"
                 >
                   <Users className="w-3.5 h-3.5 mr-2" />
                   Council Analysis
                   {completedAnalysts > 0 && (
-                    <span className="ml-2 text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5">{completedAnalysts}/4</span>
+                    <span className="ml-2 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-sm font-semibold">{completedAnalysts}/4</span>
                   )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="crossreview"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-5 py-3.5 text-sm data-[state=active]:text-[#0B192C] text-slate-500"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-[#FAF9F6] data-[state=active]:shadow-none px-5 py-3.5 text-sm font-medium data-[state=active]:text-[#0B192C] text-slate-500 hover:text-slate-700 transition-colors"
                   disabled={stage < 2}
                   data-testid="tab-stage-2"
                 >
                   <MessageSquare className="w-3.5 h-3.5 mr-2" />
                   Cross-Review
                   {completedReviews > 0 && (
-                    <span className="ml-2 text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5">{completedReviews}/4</span>
+                    <span className="ml-2 text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-sm font-semibold">{completedReviews}/4</span>
                   )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="verdict"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-transparent data-[state=active]:shadow-none px-5 py-3.5 text-sm data-[state=active]:text-[#0B192C] text-slate-500"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-[#FAF9F6] data-[state=active]:shadow-none px-5 py-3.5 text-sm font-medium data-[state=active]:text-[#0B192C] text-slate-500 hover:text-slate-700 transition-colors"
                   disabled={stage < 3}
                   data-testid="tab-stage-3"
                 >
                   <Scale className="w-3.5 h-3.5 mr-2" />
                   Final Verdict
                   {chiefData?.status === "complete" && (
-                    <span className="ml-2 text-xs bg-[#C5A059]/15 text-[#C5A059] px-1.5 py-0.5">Ready</span>
+                    <span className="ml-2 text-[10px] bg-[#C5A059]/15 text-[#C5A059] px-1.5 py-0.5 rounded-sm font-semibold">Ready</span>
                   )}
                 </TabsTrigger>
               </TabsList>

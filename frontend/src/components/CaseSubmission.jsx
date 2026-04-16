@@ -110,7 +110,7 @@ export default function CaseSubmission() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]" data-testid="case-submission-page">
+    <div className="min-h-screen bg-[#FAF9F6]" data-testid="case-submission-page">
       {/* Header */}
       <div className="bg-[#0B192C] py-10 px-4">
         <div className="max-w-3xl mx-auto">

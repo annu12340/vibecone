@@ -21,9 +21,9 @@ export function JudgeIntelligencePanel({ judgeSnapshot, stage }) {
   ];
 
   return (
-    <div className="border border-[#C5A059]/30 bg-white overflow-hidden" data-testid="judge-intelligence-panel">
+    <div className="border border-[#C5A059]/25 bg-white overflow-hidden shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)]" data-testid="judge-intelligence-panel">
       {/* Header */}
-      <div className="bg-[#0B192C] px-4 py-3 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#0A1428] to-[#12223A] px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Award className="w-4 h-4 text-[#C5A059]" />
           <p className="text-xs tracking-[0.15em] uppercase text-[#C5A059] font-medium">Judge Intelligence</p>

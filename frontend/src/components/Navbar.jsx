@@ -15,7 +15,7 @@ export default function Navbar() {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200" data-testid="navbar">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-200/60 shadow-sm" data-testid="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -38,8 +38,8 @@ export default function Navbar() {
                 data-testid={`nav-link-${label.toLowerCase().replace(/\s/g, "-")}`}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-ibmplex transition-colors ${
                   isActive(to)
-                    ? "text-[#0B192C] font-medium border-b-2 border-[#C5A059]"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    ? "text-[#0B192C] font-semibold border-b-2 border-[#C5A059]"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50/80"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -49,7 +49,7 @@ export default function Navbar() {
             <Link
               to="/submit"
               data-testid="nav-cta-button"
-              className="ml-3 px-4 py-2 bg-[#0B192C] text-white text-sm font-medium hover:bg-[#1E293B] transition-colors"
+              className="ml-3 px-4 py-2 bg-gradient-to-r from-[#0B192C] to-[#12223A] text-white text-sm font-medium hover:from-[#12223A] hover:to-[#1E293B] transition-all shadow-sm"
             >
               New Analysis
             </Link>

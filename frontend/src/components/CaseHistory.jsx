@@ -82,7 +82,7 @@ export default function CaseHistory() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA]" data-testid="case-history-page">
+    <div className="min-h-screen bg-[#FAF9F6]" data-testid="case-history-page">
       {/* Header */}
       <div className="bg-[#0B192C] py-10 px-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-end justify-between gap-4">

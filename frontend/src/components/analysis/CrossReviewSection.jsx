@@ -24,12 +24,12 @@ export function CrossReviewSection({ crossReviews, stage }) {
           return (
             <div
               key={memberId}
-              className={`bg-white border overflow-hidden transition-all hover:border-[#C5A059]/50 ${
-                status === "complete" ? "border-slate-200" : "border-dashed border-slate-200 opacity-70"
+              className={`bg-white border overflow-hidden transition-all hover:border-[#C5A059]/40 shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)] ${
+                status === "complete" ? "border-slate-200/60" : "border-dashed border-slate-200/60 opacity-70"
               }`}
               data-testid={`cross-review-card-${memberId}`}
             >
-              <div className="h-1" style={{ background: `repeating-linear-gradient(90deg, ${config.color} 0px, ${config.color} 8px, transparent 8px, transparent 14px)` }} />
+              <div className="h-1.5" style={{ background: `repeating-linear-gradient(90deg, ${config.color} 0px, ${config.color} 8px, transparent 8px, transparent 14px)` }} />
 
               <div className="px-5 pt-4 pb-3 border-b border-slate-100 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">

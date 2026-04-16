@@ -14,7 +14,7 @@ export function SidebarPanels({ similarCases, relevantLaws, caseData }) {
   if (hasCases) defaultOpen.push("similar-cases");
 
   return (
-    <div className="bg-white border border-slate-200 overflow-hidden" data-testid="sidebar-panels">
+    <div className="bg-white border border-slate-200/60 overflow-hidden shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)]" data-testid="sidebar-panels">
       <Accordion type="multiple" defaultValue={defaultOpen}>
         {/* Case Facts */}
         {(hasCharges || hasDescription) && (

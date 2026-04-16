@@ -5,9 +5,10 @@ export function ChiefJusticeCard({ chiefData }) {
   const synthesis = chiefData?.synthesis;
 
   return (
-    <div className="bg-[#0B192C] border border-[#C5A059]/30" data-testid="chief-justice-card">
-      <div className="h-1 bg-[#C5A059]" />
-      <div className="px-6 pt-6 pb-4 border-b border-white/10 flex items-start justify-between">
+    <div className="bg-gradient-to-br from-[#0B192C] to-[#12223A] border border-[#C5A059]/20 shadow-[0_8px_32px_-8px_rgba(11,25,44,0.25)] relative overflow-hidden" data-testid="chief-justice-card">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-[#C5A059]/5 blur-[80px] rounded-full pointer-events-none" />
+      <div className="h-1.5 bg-gradient-to-r from-[#C5A059] to-[#D4B06E]" />
+      <div className="px-6 pt-6 pb-4 border-b border-white/10 flex items-start justify-between relative z-10">
         <div>
           <p className="text-xs tracking-[0.15em] uppercase font-semibold text-[#C5A059]">Chief Justice Synthesizer</p>
           <h3 className="font-playfair text-2xl text-white mt-1">The Council — Final Verdict</h3>
@@ -30,7 +31,7 @@ export function ChiefJusticeCard({ chiefData }) {
         )}
       </div>
 
-      <div className="p-6">
+      <div className="p-6 relative z-10">
         {(status === "pending" || status === "analyzing") && (
           <div className="flex flex-col items-center justify-center py-16">
             {status === "analyzing" ? (
@@ -56,7 +57,7 @@ export function ChiefJusticeCard({ chiefData }) {
             {/* Executive Summary */}
             <div>
               <p className="text-xs uppercase tracking-widest text-[#C5A059] mb-3">Executive Summary</p>
-              <p className="text-slate-300 text-sm leading-relaxed">{synthesis.executive_summary}</p>
+              <p className="text-slate-200 text-sm leading-relaxed">{synthesis.executive_summary}</p>
             </div>
 
             {/* Final Verdict */}
@@ -75,7 +76,7 @@ export function ChiefJusticeCard({ chiefData }) {
                   <p className="text-xs uppercase tracking-widest text-[#C5A059] mb-3">Key Insights</p>
                   <ul className="space-y-2">
                     {synthesis.key_insights.map((ins, i) => (
-                      <li key={i} className="text-sm text-slate-300 flex gap-2 leading-relaxed">
+                      <li key={i} className="text-sm text-slate-200 flex gap-2 leading-relaxed">
                         <span className="text-[#C5A059] mt-0.5 shrink-0">›</span>{ins}
                       </li>
                     ))}
@@ -118,7 +119,7 @@ export function ChiefJusticeCard({ chiefData }) {
             {synthesis.cross_review_impact && (
               <div className="border border-white/10 bg-white/5 p-5">
                 <p className="text-xs uppercase tracking-widest text-[#C5A059] mb-2">Cross-Review Impact</p>
-                <p className="text-slate-300 text-sm leading-relaxed">{synthesis.cross_review_impact}</p>
+                <p className="text-slate-200 text-sm leading-relaxed">{synthesis.cross_review_impact}</p>
               </div>
             )}
 

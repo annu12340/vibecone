@@ -173,10 +173,10 @@ export function CouncilCard({ memberId, memberData }) {
 
   return (
     <div
-      className={`bg-white border overflow-hidden transition-all duration-500 hover:border-[#C5A059]/50 ${isAnalyzing ? "council-analyzing" : "border-slate-200"}`}
+      className={`bg-white border overflow-hidden transition-all duration-500 hover:border-[#C5A059]/40 shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)] ${isAnalyzing ? "council-analyzing" : "border-slate-200/60"}`}
       data-testid={`council-card-${memberId}`}
     >
-      <div className="h-1" style={{ backgroundColor: config.color }} />
+      <div className="h-1.5" style={{ backgroundColor: config.color }} />
 
       <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex items-start justify-between">
         <div>
