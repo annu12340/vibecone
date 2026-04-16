@@ -7,6 +7,7 @@ import LandingPage from "./components/LandingPage";
 import CaseSubmission from "./components/CaseSubmission";
 import AnalysisDashboard from "./components/AnalysisDashboard";
 import JudgeProfiles from "./components/JudgeProfiles";
+import JudgeDetailPage from "./components/JudgeDetailPage";
 import CaseHistory from "./components/CaseHistory";
 import CaseMap from "./components/CaseMap";
 
@@ -38,6 +39,11 @@ function App() {
             <Route path="/judges" element={
               <RoleGuard requiredRole="commonUser">
                 <JudgeProfiles />
+              </RoleGuard>
+            } />
+            <Route path="/judges/:judgeId" element={
+              <RoleGuard requiredRole="commonUser">
+                <JudgeDetailPage />
               </RoleGuard>
             } />
             <Route path="/history" element={

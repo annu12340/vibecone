@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import {
   Search, AlertCircle, ChevronRight, Users, X,
   Award, TrendingUp, TrendingDown, Clock, BarChart2, Scale, FileText
@@ -781,7 +782,8 @@ const TABS = [
   { id: "temporal", label: "Temporal", icon: Clock },
 ];
 
-function JudgeModal({ judge, onClose }) {
+// Export JudgeModal for use in JudgeDetailPage
+export function JudgeModal({ judge, onClose }) {
   const [activeTab, setActiveTab] = useState("overview");
   if (!judge) return null;
 
@@ -844,17 +846,22 @@ function JudgeModal({ judge, onClose }) {
 
 // --- JUDGE CARD ---
 
-function JudgeCard({ judge, onClick }) {
+function JudgeCard({ judge }) {
+  const navigate = useNavigate();
   const biasScore = judge.bias_score || 0;
   const biasColor = biasScore >= 67 ? "#991B1B" : biasScore >= 34 ? "#C5A059" : "#166534";
   const rc = judge.report_card || {};
   const hasSummary = judge.summary_stats;
   const isSummaryOnly = judge.is_summary_only;
 
+  const handleClick = () => {
+    navigate(`/judges/${judge.id}`);
+  };
+
   return (
     <div
       className="bg-white border border-slate-200 hover:border-[#0B192C] transition-all cursor-pointer hover:shadow-md group"
-      onClick={() => onClick(judge)}
+      onClick={handleClick}
       data-testid={`judge-card-${judge.id}`}
     >
       <div className={`h-1 ${isSummaryOnly ? 'bg-[#C5A059]' : 'bg-[#0B192C]'} group-hover:bg-[#C5A059] transition-colors`} />
@@ -993,7 +1000,6 @@ export default function JudgeProfiles() {
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
   const [riskFilter, setRiskFilter] = useState("all");
-  const [selectedJudge, setSelectedJudge] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState("detailed"); // "detailed" or "all"
@@ -1164,7 +1170,7 @@ export default function JudgeProfiles() {
             </p>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((judge) => (
-                <JudgeCard key={judge.id} judge={judge} onClick={setSelectedJudge} />
+                <JudgeCard key={judge.id} judge={judge} />
               ))}
             </div>
             {filtered.length === 0 && (
@@ -1176,11 +1182,6 @@ export default function JudgeProfiles() {
           </>
         )}
       </div>
-
-      {/* Judge detail modal */}
-      {selectedJudge && (
-        <JudgeModal judge={selectedJudge} onClose={() => setSelectedJudge(null)} />
-      )}
     </div>
   );
 }
