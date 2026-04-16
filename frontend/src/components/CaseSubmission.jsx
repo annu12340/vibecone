@@ -151,7 +151,7 @@ export default function CaseSubmission() {
               value={cnr}
               onChange={(e) => setCnr(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="e.g., DLCT020357252018"
+              placeholder="e.g., APNE000064092025"
               className="flex-1 px-5 py-4 border-2 border-slate-600 bg-white text-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#C5A059] focus:ring-2 focus:ring-[#C5A059]/30"
               data-testid="input-cnr"
               disabled={cnrLoading}
