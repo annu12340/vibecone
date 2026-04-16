@@ -126,7 +126,7 @@ export default function CaseSubmission() {
       <div className="bg-[#0B192C] py-12 px-4">
         <div className="max-w-5xl mx-auto">
           <p className="text-xs tracking-[0.2em] uppercase text-[#C5A059] mb-2 font-medium">Case Analysis</p>
-          <h1 className="font-playfair text-4xl sm:text-5xl text-white mb-3">eCourts Case Lookup</h1>
+          <h1 className="font-playfair text-4xl sm:text-5xl text-white mb-3">Case Lookup</h1>
           <p className="text-slate-400 text-base max-w-2xl">
             Enter the Case Number Reference (CNR) to fetch complete case details from eCourts (official Indian judiciary database) with automatic fallback to Indian Kanoon.
           </p>

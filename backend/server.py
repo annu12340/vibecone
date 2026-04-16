@@ -14,6 +14,7 @@ from bson import ObjectId
 import requests
 from ecourts_helper import transform_ecourts_to_unified_format
 from ecourts_api_client import ecourts_client
+from map import COURT_STATE_MAP
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -257,6 +258,157 @@ async def get_analysis(case_id: str):
         return {"case_id": case_id, "status": "not_started", "stage": 0, "members": {}}
     return analysis
 
+
+
+# --- eCourts India API Client ---
+class ECourtsClient:
+    """Client for the eCourts India partner API."""
+    BASE_URL = "https://webapi.ecourtsindia.com/api/partner/case"
+
+    def __init__(self):
+        self.api_key = os.environ.get("ECOURTS_API_KEY", "")
+
+    def get_case_with_latest_order(self, cnr: str) -> dict:
+        """Fetch case details from eCourts API by CNR number."""
+        url = f"{self.BASE_URL}/{cnr.strip().upper()}"
+        headers = {"Accept": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code == 404:
+            return None
+        if response.status_code != 200:
+            raise Exception(f"eCourts API returned {response.status_code}: {response.text[:200]}")
+        data = response.json()
+        # API may wrap data under a key or return it directly
+        if isinstance(data, dict) and data.get("status") in (0, "0", False, "false"):
+            return None
+        return data
+
+
+def transform_ecourts_to_unified_format(raw: dict) -> dict:
+    """
+    Transform eCourts API response into the unified shape the frontend expects.
+    Handles both direct response and nested { data: { courtCaseData: ... } } shapes.
+    """
+    # Unwrap common envelope shapes
+    if "data" in raw and isinstance(raw["data"], dict):
+        inner = raw["data"]
+        case_data = inner.get("courtCaseData") or inner.get("caseData") or inner
+    else:
+        case_data = raw.get("courtCaseData") or raw.get("caseData") or raw
+
+    def _join(val):
+        if isinstance(val, list):
+            return ", ".join(str(v) for v in val if v)
+        return val or ""
+
+    # Parties
+    petitioners = []
+    respondents = []
+    for p in (case_data.get("petitioners") or case_data.get("petitionerDetails") or []):
+        name = p.get("name") or p.get("petitionerName") or str(p) if isinstance(p, dict) else str(p)
+        if name:
+            petitioners.append(name)
+    for r in (case_data.get("respondents") or case_data.get("respondentDetails") or []):
+        name = r.get("name") or r.get("respondentName") or str(r) if isinstance(r, dict) else str(r)
+        if name:
+            respondents.append(name)
+
+    # Advocates
+    pet_advocates = [a.get("name") or str(a) for a in (case_data.get("petitionerAdvocates") or []) if a]
+    res_advocates = [a.get("name") or str(a) for a in (case_data.get("respondentAdvocates") or []) if a]
+
+    # Judges
+    judges = []
+    for j in (case_data.get("judges") or case_data.get("judgeDetails") or []):
+        name = j.get("name") or j.get("judgeName") or str(j) if isinstance(j, dict) else str(j)
+        if name:
+            judges.append(name)
+    if not judges and case_data.get("judgeName"):
+        judges = [case_data["judgeName"]]
+
+    # Acts & sections
+    acts = []
+    for a in (case_data.get("actsAndSections") or case_data.get("acts") or []):
+        if isinstance(a, dict):
+            act_str = a.get("act") or a.get("actName") or ""
+            sec = a.get("section") or a.get("sections") or ""
+            acts.append(f"{act_str} § {sec}".strip(" §") if sec else act_str)
+        elif isinstance(a, str):
+            acts.append(a)
+
+    # Build title from parties or case number
+    cnr_val = case_data.get("cnr") or case_data.get("cnrNumber") or raw.get("cnr", "")
+    pet_str = petitioners[0] if petitioners else ""
+    res_str = respondents[0] if respondents else ""
+    if pet_str and res_str:
+        title = f"{pet_str} vs {res_str}"
+    elif pet_str:
+        title = f"{pet_str} vs State"
+    else:
+        title = case_data.get("caseTitle") or case_data.get("title") or f"Case {cnr_val}"
+
+    # Court name
+    court = (
+        case_data.get("courtName")
+        or case_data.get("court")
+        or case_data.get("establishmentName")
+        or ""
+    )
+
+    # AI analysis fields (may or may not be present)
+    ai_summary = (
+        case_data.get("caseAiSummary")
+        or case_data.get("aiSummary")
+        or raw.get("caseAiSummary")
+        or None
+    )
+    ai_analysis = case_data.get("caseAiAnalysis") or raw.get("caseAiAnalysis") or None
+    latest_order_analysis = (
+        case_data.get("latestOrderAnalysis")
+        or case_data.get("orderAnalysis")
+        or raw.get("latestOrderAnalysis")
+        or None
+    )
+
+    return {
+        "cnr": cnr_val,
+        "title": title,
+        "court": court,
+        "case_type": case_data.get("caseType") or case_data.get("caseTypeCode") or "",
+        "case_type_full": case_data.get("caseTypeFull") or case_data.get("caseTypeFullName") or case_data.get("caseType") or "",
+        "case_status": case_data.get("caseStatus") or case_data.get("status") or "",
+        "registration_number": case_data.get("registrationNumber") or case_data.get("caseNumber") or "",
+        "filing_date": case_data.get("filingDate") or case_data.get("dateOfFiling") or "",
+        "registration_date": case_data.get("registrationDate") or "",
+        "first_hearing_date": case_data.get("firstHearingDate") or "",
+        "next_hearing_date": case_data.get("nextHearingDate") or case_data.get("nextDate") or "",
+        "last_hearing_date": case_data.get("lastHearingDate") or "",
+        "decision_date": case_data.get("decisionDate") or case_data.get("disposalDate") or "",
+        "judges": judges,
+        "petitioners": petitioners,
+        "respondents": respondents,
+        "petitioner_advocates": pet_advocates,
+        "respondent_advocates": res_advocates,
+        "acts_and_sections": acts,
+        "court_code": case_data.get("courtCode") or "",
+        "judicial_section": case_data.get("judicialSection") or "",
+        "stage_of_case": case_data.get("stageOfCase") or case_data.get("stage") or "",
+        "order_count": case_data.get("orderCount") or 0,
+        "has_orders": bool(case_data.get("orders") or case_data.get("orderCount")),
+        "interim_orders": case_data.get("interimOrders") or [],
+        "subordinate_court": case_data.get("subordinateCourt") or None,
+        "case_ai_summary": ai_summary,
+        "case_ai_analysis": ai_analysis,
+        "latest_order_analysis": latest_order_analysis,
+        "doc_text": case_data.get("caseDetails") or case_data.get("orderText") or "",
+        "source": "ecourts",
+    }
+
+
+ecourts_client = ECourtsClient()
 
 
 # --- Indian Kanoon API Integration ---
@@ -1071,71 +1223,7 @@ async def startup_event():
 
 app.include_router(api_router)
 
-# --- Court-to-State mapping for India Map ---
-COURT_STATE_MAP = {
-    "supreme court of india": "Delhi",
-    "supreme court": "Delhi",
-    "high court - delhi": "Delhi",
-    "delhi high court": "Delhi",
-    "high court - bombay": "Maharashtra",
-    "bombay high court": "Maharashtra",
-    "high court - madras": "Tamil Nadu",
-    "madras high court": "Tamil Nadu",
-    "high court - calcutta": "West Bengal",
-    "calcutta high court": "West Bengal",
-    "high court - karnataka": "Karnataka",
-    "karnataka high court": "Karnataka",
-    "high court - kerala": "Kerala",
-    "kerala high court": "Kerala",
-    "high court - allahabad": "Uttar Pradesh",
-    "allahabad high court": "Uttar Pradesh",
-    "high court - patna": "Bihar",
-    "patna high court": "Bihar",
-    "high court - rajasthan": "Rajasthan",
-    "rajasthan high court": "Rajasthan",
-    "high court - gujarat": "Gujarat",
-    "gujarat high court": "Gujarat",
-    "high court - punjab and haryana": "Punjab",
-    "punjab and haryana high court": "Punjab",
-    "high court - hyderabad": "Telangana",
-    "telangana high court": "Telangana",
-    "high court - andhra pradesh": "Andhra Pradesh",
-    "andhra pradesh high court": "Andhra Pradesh",
-    "high court - orissa": "Odisha",
-    "orissa high court": "Odisha",
-    "high court - gauhati": "Assam",
-    "gauhati high court": "Assam",
-    "high court - madhya pradesh": "Madhya Pradesh",
-    "madhya pradesh high court": "Madhya Pradesh",
-    "high court - jharkhand": "Jharkhand",
-    "jharkhand high court": "Jharkhand",
-    "high court - chhattisgarh": "Chhattisgarh",
-    "chhattisgarh high court": "Chhattisgarh",
-    "high court - uttarakhand": "Uttarakhand",
-    "uttarakhand high court": "Uttarakhand",
-    "high court - himachal pradesh": "Himachal Pradesh",
-    "high court - goa": "Goa",
-    "high court - manipur": "Manipur",
-    "high court - meghalaya": "Meghalaya",
-    "high court - tripura": "Tripura",
-    "high court - sikkim": "Sikkim",
-    "new delhi": "Delhi",
-    "mumbai": "Maharashtra",
-    "chennai": "Tamil Nadu",
-    "kolkata": "West Bengal",
-    "bangalore": "Karnataka",
-    "bengaluru": "Karnataka",
-    "hyderabad": "Telangana",
-    "ahmedabad": "Gujarat",
-    "pune": "Maharashtra",
-    "lucknow": "Uttar Pradesh",
-    "jaipur": "Rajasthan",
-    "chandigarh": "Punjab",
-    "kochi": "Kerala",
-    "bhopal": "Madhya Pradesh",
-    "patna": "Bihar",
-    "guwahati": "Assam",
-}
+
 
 def _resolve_state(text):
     """Map a court/jurisdiction/location string to an Indian state."""
