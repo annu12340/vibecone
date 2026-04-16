@@ -194,7 +194,7 @@ function JudgeModal({ judge, onClose }) {
           {/* Demographic patterns chart */}
           {demographics.length > 0 && (
             <div className="border border-slate-200 p-4">
-              <p className="text-xs uppercase tracking-wider text-slate-400 mb-4">Conviction Rate by Defendant Race</p>
+              <p className="text-xs uppercase tracking-wider text-slate-400 mb-4">Conviction Rate by Defendant Community / Caste</p>
               <ResponsiveContainer width="100%" height={160}>
                 <BarChart data={demographics} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />

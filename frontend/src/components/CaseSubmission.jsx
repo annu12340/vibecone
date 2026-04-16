@@ -6,8 +6,21 @@ import { AlertCircle, Plus, X, Scale, ChevronDown } from "lucide-react";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const CASE_TYPES = ["Criminal", "Civil", "Family", "Constitutional", "Corporate / Financial", "Employment", "Immigration", "Drug Offense", "Domestic Violence", "Juvenile"];
-const JURISDICTIONS = ["Federal (U.S.)", "California", "New York", "Texas", "Florida", "Illinois", "Ohio", "Washington", "Other U.S. State", "UK", "EU", "India", "Other"];
+const CASE_TYPES = [
+  "Criminal (IPC)", "Civil / Property", "Constitutional / Writ", "Family / Matrimonial",
+  "NDPS / Drug Offence", "Domestic Violence", "Corporate / Financial Fraud", "Labour / Employment",
+  "Cyber / IT Act", "POCSO / Child Protection", "Anti-Corruption / CBI", "UAPA / National Security",
+  "Consumer / RERA", "Land Acquisition", "Juvenile Justice",
+];
+const JURISDICTIONS = [
+  "Supreme Court of India",
+  "Delhi High Court", "Bombay High Court", "Madras High Court",
+  "Calcutta High Court", "Allahabad High Court", "Karnataka High Court",
+  "Gujarat High Court", "Rajasthan High Court", "Punjab & Haryana High Court",
+  "Andhra Pradesh High Court", "Telangana High Court", "Kerala High Court",
+  "Madhya Pradesh High Court", "Patna High Court", "Gauhati High Court",
+  "District & Sessions Court", "Fast Track Court", "Other",
+];
 
 export default function CaseSubmission() {
   const navigate = useNavigate();
@@ -100,7 +113,7 @@ export default function CaseSubmission() {
               name="title"
               value={form.title}
               onChange={handleChange}
-              placeholder="e.g., State v. Johnson — Drug Trafficking Charges"
+              placeholder="e.g., State v. Sharma — IPC § 302 / Murder Charges, Delhi Sessions Court"
               className="w-full px-4 py-3 border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#0B192C] focus:ring-1 focus:ring-[#0B192C]"
               data-testid="input-case-title"
               required
@@ -159,7 +172,7 @@ export default function CaseSubmission() {
               name="judge_name"
               value={form.judge_name}
               onChange={handleChange}
-              placeholder="e.g., Hon. Margaret Chen"
+              placeholder="e.g., Justice D.Y. Chandrachud"
               className="w-full px-4 py-3 border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#0B192C] focus:ring-1 focus:ring-[#0B192C]"
               data-testid="input-judge-name"
             />
@@ -209,13 +222,14 @@ export default function CaseSubmission() {
             <p className="text-xs text-slate-500 mb-4">This information is used solely to analyze potential judicial bias patterns.</p>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Race / Ethnicity</label>
+                <label className="block text-xs text-slate-500 mb-1">Caste / Community</label>
                 <select name="defendant_race" value={form.defendant_race} onChange={handleChange}
                   className="w-full px-3 py-2 border border-slate-300 text-xs text-slate-900 bg-white focus:outline-none focus:border-[#0B192C]"
                   data-testid="select-defendant-race">
                   <option value="">Not specified</option>
-                  <option>White</option><option>Black / African American</option>
-                  <option>Hispanic / Latino</option><option>Asian</option><option>Other</option>
+                  <option>General / Upper Caste</option><option>OBC (Other Backward Class)</option>
+                  <option>SC (Scheduled Caste)</option><option>ST (Scheduled Tribe)</option>
+                  <option>Muslim</option><option>Christian</option><option>Other Minority</option>
                 </select>
               </div>
               <div>
@@ -250,7 +264,7 @@ export default function CaseSubmission() {
               value={form.description}
               onChange={handleChange}
               rows={8}
-              placeholder="Describe the case facts in detail. Include: timeline of events, key parties involved, evidence available, circumstances of arrest/filing, any procedural history, and anything else relevant to the case..."
+              placeholder="Describe the case facts in detail. Include: timeline of events, key parties involved, what IPC sections or Acts are invoked, evidence available, how the FIR was filed, any bail status, prior court orders, and anything else relevant to the case..."
               className="w-full px-4 py-3 border border-slate-300 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#0B192C] focus:ring-1 focus:ring-[#0B192C] resize-none leading-relaxed"
               data-testid="textarea-description"
               required
