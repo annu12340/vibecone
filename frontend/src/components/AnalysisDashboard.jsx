@@ -217,6 +217,122 @@ function CouncilCard({ memberId, memberData }) {
   );
 }
 
+function CrossReviewSection({ crossReviews, stage }) {
+  const memberOrder = ["prosecution", "defense", "legal_scholar", "bias_detector"];
+  const hasAny = crossReviews && Object.keys(crossReviews).length > 0;
+
+  // Show the section once stage >= 2
+  if (stage < 2 && !hasAny) return null;
+
+  return (
+    <div data-testid="cross-review-section">
+      {/* Section header */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex-1 h-px bg-slate-200" />
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0B192C] text-xs font-medium uppercase tracking-widest text-[#C5A059]">
+          <RefreshCw className="w-3.5 h-3.5" />
+          Stage 2 — Cross-Review Deliberation
+        </div>
+        <div className="flex-1 h-px bg-slate-200" />
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        {memberOrder.map((memberId) => {
+          const config = COUNCIL_CONFIG[memberId];
+          const reviewData = crossReviews?.[memberId];
+          const status = reviewData?.status || "pending";
+          const review = reviewData?.analysis;
+
+          return (
+            <div
+              key={memberId}
+              className={`bg-white border overflow-hidden transition-all ${
+                status === "complete" ? "border-slate-200" : "border-dashed border-slate-200 opacity-70"
+              }`}
+              data-testid={`cross-review-card-${memberId}`}
+            >
+              {/* Thin accent + striped pattern to distinguish from Stage 1 */}
+              <div className="h-1" style={{ background: `repeating-linear-gradient(90deg, ${config.color} 0px, ${config.color} 8px, transparent 8px, transparent 14px)` }} />
+
+              <div className="px-4 pt-3 pb-2 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <p className="text-xs tracking-[0.12em] uppercase font-semibold text-slate-400">Cross-Review</p>
+                  <h3 className="font-playfair text-base text-slate-900" style={{ color: config.color }}>{config.name}</h3>
+                </div>
+                <StatusBadge status={status} />
+              </div>
+
+              <div className="p-4 min-h-[120px]">
+                {status === "pending" && (
+                  <div className="flex flex-col items-center justify-center h-24 text-slate-400">
+                    <Clock className="w-5 h-5 mb-1.5 opacity-30" />
+                    <p className="text-xs">Awaiting Stage 1 completion...</p>
+                  </div>
+                )}
+                {status === "analyzing" && (
+                  <div className="flex flex-col items-center justify-center h-24">
+                    <div className="flex gap-1.5 mb-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 dot-1" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 dot-2" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 dot-3" />
+                    </div>
+                    <p className="text-xs text-slate-500">Reviewing other analyses...</p>
+                  </div>
+                )}
+                {status === "failed" && (
+                  <div className="flex items-center gap-2 text-red-600 text-xs">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Cross-review failed.</span>
+                  </div>
+                )}
+                {status === "complete" && review && (
+                  <div className="space-y-2.5 animate-fade-in-up">
+                    {review.cross_review_summary && (
+                      <p className="text-sm text-slate-700 leading-relaxed">{review.cross_review_summary}</p>
+                    )}
+                    {review.challenges?.length > 0 && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">Challenges</p>
+                        <ul className="space-y-1">
+                          {review.challenges.slice(0, 2).map((c, i) => (
+                            <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+                              <span style={{ color: config.color }} className="shrink-0 font-bold mt-0.5">✗</span>
+                              {c}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {review.agreements?.length > 0 && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">Concedes</p>
+                        <ul className="space-y-1">
+                          {review.agreements.slice(0, 1).map((a, i) => (
+                            <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+                              <span className="text-emerald-600 shrink-0 font-bold mt-0.5">✓</span>
+                              {a}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {review.key_insight && (
+                      <p className="text-xs italic text-slate-500 border-l-2 pl-2 mt-1" style={{ borderColor: config.color }}>
+                        "{review.key_insight}"
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 function ChiefJusticeCard({ chiefData }) {
   const status = chiefData?.status || "pending";
   const synthesis = chiefData?.synthesis;
@@ -295,6 +411,13 @@ function ChiefJusticeCard({ chiefData }) {
                 <div className="border border-[#C5A059]/30 bg-[#C5A059]/5 p-4 mt-2">
                   <p className="text-xs uppercase tracking-widest text-[#C5A059] mb-1">Final Verdict</p>
                   <p className="text-white font-playfair italic text-base">"{synthesis.final_verdict}"</p>
+                </div>
+              )}
+
+              {synthesis.cross_review_impact && (
+                <div className="border border-white/10 bg-white/5 p-4 mt-2">
+                  <p className="text-xs uppercase tracking-widest text-[#C5A059] mb-1">Cross-Review Impact</p>
+                  <p className="text-slate-300 text-sm leading-relaxed">{synthesis.cross_review_impact}</p>
                 </div>
               )}
             </div>
@@ -405,7 +528,7 @@ function LawsPanel({ laws }) {
   );
 }
 
-const STAGE_LABELS = ["", "Individual Analyses", "Individual Analyses", "Synthesis", "Complete"];
+const STAGE_LABELS = ["", "Individual Analyses", "Cross-Review Deliberation", "Chief Justice Synthesis", "Complete"];
 
 export default function AnalysisDashboard() {
   const { caseId } = useParams();
@@ -560,6 +683,8 @@ export default function AnalysisDashboard() {
                 <CouncilCard key={id} memberId={id} memberData={members[id]} />
               ))}
             </div>
+            {/* Stage 2 Cross-Review */}
+            <CrossReviewSection crossReviews={analysis?.cross_reviews} stage={stage} />
             {/* Chief Justice */}
             <ChiefJusticeCard chiefData={chiefData} />
           </div>

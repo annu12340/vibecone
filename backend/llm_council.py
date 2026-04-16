@@ -125,24 +125,31 @@ CHIEF_JUSTICE_CONFIG = {
     "description": "Synthesizes all council analyses into the final verdict",
     "color": "#C5A059",
     "system_message": (
-        "You are the Chief Justice of the AI Legal Council for Indian law matters. You have received analyses from:\n"
+        "You are the Chief Justice of the AI Legal Council for Indian law matters. "
+        "You have received TWO rounds of deliberation:\n"
+        "— Stage 1: Independent analyses from each of the four council members\n"
+        "— Stage 2: Cross-review rebuttals where each analyst challenged the others\n\n"
+        "Council members:\n"
         "1. Counsel Maximus (Prosecution Analyst — IPC/CrPC perspective)\n"
         "2. Counsel Veridicus (Defense Analyst — constitutional rights perspective)\n"
         "3. Professor Lexis (Legal Scholar — NALSAR, Indian precedents)\n"
         "4. Analyst Veritas (Judicial Bias Analyst — caste/religion/gender in Indian courts)\n\n"
-        "Synthesize all perspectives into a balanced, comprehensive final assessment for a common Indian person who needs clear guidance. "
-        "Use plain language. Reference specific Indian laws, courts, and next steps relevant to the Indian legal system.\n\n"
+        "Having observed both rounds of deliberation — original analyses AND cross-review rebuttals — "
+        "synthesize the most balanced, well-considered final assessment. "
+        "Note where the cross-review shifted positions, where disagreements hardened, and what emerged as the strongest consensus. "
+        "Use plain language. Reference specific Indian laws, courts, and actionable next steps.\n\n"
         "CRITICAL: Respond ONLY with valid JSON, no markdown, no extra text:\n"
         "{\n"
-        '  "executive_summary": "3-4 sentence balanced overview",\n'
+        '  "executive_summary": "3-4 sentence balanced overview reflecting both rounds of deliberation",\n'
         '  "outcome_assessment": {\n'
         '    "most_likely_outcome": "Description of most likely outcome",\n'
         '    "prosecution_wins_probability": 60,\n'
         '    "defense_wins_probability": 40\n'
         '  },\n'
-        '  "key_insights": ["insight 1", "insight 2", "insight 3"],\n'
-        '  "council_consensus": "Where the council unanimously agrees",\n'
-        '  "key_disagreements": "Where analysts disagree and why",\n'
+        '  "key_insights": ["insight from cross-review deliberation 1", "insight 2", "insight 3"],\n'
+        '  "council_consensus": "Where both Stage 1 and Stage 2 converge — strongest agreement",\n'
+        '  "key_disagreements": "The sharpest clash that emerged during cross-review and why it matters",\n'
+        '  "cross_review_impact": "How Stage 2 deliberation changed or hardened the council positions",\n'
         '  "recommendations_for_user": [\n'
         '    {"action": "Specific action to take", "priority": "high", "reason": "Why this matters"}\n'
         '  ],\n'
@@ -195,6 +202,68 @@ def build_case_prompt(case_data: dict) -> str:
     )
 
 
+CROSS_REVIEW_MESSAGES = {
+    "prosecution": (
+        "You are Counsel Maximus, Prosecution Analyst. You have completed your Stage 1 analysis. "
+        "You are now reviewing the other council members' Stage 1 analyses to sharpen your position.\n\n"
+        "Read the defense, scholar, and bias analyst responses carefully. "
+        "Identify where the defense argument is weakest, where the scholar supports your case, "
+        "and whether the bias analyst's findings help or hurt the prosecution.\n\n"
+        "CRITICAL: Respond ONLY with valid JSON:\n"
+        "{\n"
+        '  "cross_review_summary": "1-2 sentence overall reaction after reading others",\n'
+        '  "agreements": ["What you agree with from the other analysts — be specific"],\n'
+        '  "challenges": ["The weakest defense argument you will demolish in court", "challenge 2"],\n'
+        '  "revised_position": "Any change to your prosecution strategy based on what you read",\n'
+        '  "key_insight": "The single most important point the other analysts missed or got wrong"\n'
+        "}"
+    ),
+    "defense": (
+        "You are Counsel Veridicus, Defense Analyst. You have completed your Stage 1 analysis. "
+        "You are now reviewing the other council members' Stage 1 analyses to reinforce your defense.\n\n"
+        "Read the prosecution, scholar, and bias analyst responses carefully. "
+        "Challenge the prosecution's strongest arguments, find constitutional angles the scholar missed, "
+        "and leverage the bias analyst's findings to protect your client.\n\n"
+        "CRITICAL: Respond ONLY with valid JSON:\n"
+        "{\n"
+        '  "cross_review_summary": "1-2 sentence overall reaction after reading others",\n'
+        '  "agreements": ["What you agree with from the other analysts — especially the bias analyst"],\n'
+        '  "challenges": ["The prosecution argument you will challenge most vigorously", "challenge 2"],\n'
+        '  "revised_position": "Any updated defense strategy based on what you read",\n'
+        '  "key_insight": "The constitutional protection or precedent the prosecution completely ignored"\n'
+        "}"
+    ),
+    "legal_scholar": (
+        "You are Professor Lexis, Legal Scholar. You have completed your Stage 1 analysis. "
+        "You are now reviewing the prosecution and defense analyses for legal accuracy.\n\n"
+        "As a neutral academic, identify where the prosecution or defense misapplied Indian law, "
+        "flag any incorrect citations, and add the most critical precedent that neither side mentioned.\n\n"
+        "CRITICAL: Respond ONLY with valid JSON:\n"
+        "{\n"
+        '  "cross_review_summary": "1-2 sentence scholarly assessment of both sides",\n'
+        '  "agreements": ["What either side got legally correct — cite the law/provision"],\n'
+        '  "challenges": ["A legal error or misapplication you identified in either analysis", "challenge 2"],\n'
+        '  "revised_position": "Any updated scholarly position based on cross-review",\n'
+        '  "key_insight": "The most important precedent or legal principle both sides overlooked"\n'
+        "}"
+    ),
+    "bias_detector": (
+        "You are Analyst Veritas, Judicial Bias Analyst. You have completed your Stage 1 analysis. "
+        "You are now reviewing all other analyses to flag any bias they missed or dismissed.\n\n"
+        "Examine whether the prosecution exploited systemic biases, whether the defense adequately "
+        "raised equality arguments, and whether the scholar's precedents reflect equitable outcomes.\n\n"
+        "CRITICAL: Respond ONLY with valid JSON:\n"
+        "{\n"
+        '  "cross_review_summary": "1-2 sentence bias assessment of the other analyses",\n'
+        '  "agreements": ["Where another analyst correctly identified a systemic factor"],\n'
+        '  "challenges": ["Bias angle that the prosecution/defense/scholar completely ignored", "challenge 2"],\n'
+        '  "revised_position": "Any refined bias risk assessment after reviewing the full council",\n'
+        '  "key_insight": "The single most important equality concern the entire council has underweighted"\n'
+        "}"
+    ),
+}
+
+
 async def analyze_member(member_id: str, case_data: dict) -> dict:
     """Run analysis for a single council member."""
     member = next((m for m in COUNCIL_MEMBERS if m["id"] == member_id), None)
@@ -218,36 +287,86 @@ async def analyze_member(member_id: str, case_data: dict) -> dict:
         return {"summary": f"Analysis failed: {str(e)}", "error": str(e)}
 
 
-async def synthesize_chief_justice(case_data: dict, members_data: dict) -> dict:
-    """Run Chief Justice synthesis of all four analyses."""
+async def cross_review_member(member_id: str, case_data: dict, own_analysis: dict, all_analyses: dict) -> dict:
+    """Run Stage 2 cross-review for a council member — reads others' Stage 1 analyses and responds."""
+    system_msg = CROSS_REVIEW_MESSAGES.get(member_id)
+    if not system_msg:
+        return {"error": f"No cross-review config for: {member_id}", "cross_review_summary": "Not configured"}
+
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=f"legal-xreview-{member_id}-{case_data.get('id', 'unknown')}",
+        system_message=system_msg,
+    ).with_model(LLM_PROVIDER, LLM_MODEL)
+
+    member_labels = {
+        "prosecution": "Counsel Maximus — Prosecution Analyst",
+        "defense": "Counsel Veridicus — Defense Analyst",
+        "legal_scholar": "Professor Lexis — Legal Scholar",
+        "bias_detector": "Analyst Veritas — Judicial Bias Analyst",
+    }
+
+    other_analyses_text = f"\n\n=== YOUR OWN STAGE 1 ANALYSIS ===\n{json.dumps(own_analysis, indent=2)}"
+    for mid, data in all_analyses.items():
+        if mid == member_id:
+            continue
+        label = member_labels.get(mid, mid)
+        analysis = data.get("analysis", {})
+        other_analyses_text += f"\n\n=== {label} ===\n{json.dumps(analysis, indent=2)}"
+
+    case_prompt = build_case_prompt(case_data)
+    message = (
+        f"CASE:\n{case_prompt}\n\n"
+        f"COUNCIL ANALYSES TO REVIEW:{other_analyses_text}\n\n"
+        "Please provide your cross-review response."
+    )
+
+    try:
+        response = await chat.send_message(UserMessage(text=message))
+        return extract_json_from_response(response)
+    except Exception as e:
+        logger.error(f"Cross-review failed for {member_id}: {e}")
+        return {"cross_review_summary": f"Cross-review failed: {str(e)}", "error": str(e)}
+
+
+async def synthesize_chief_justice(case_data: dict, members_data: dict, cross_reviews: dict = None) -> dict:
+    """Run Chief Justice synthesis using Stage 1 analyses + Stage 2 cross-reviews."""
     chat = LlmChat(
         api_key=EMERGENT_LLM_KEY,
         session_id=f"legal-chief-{case_data.get('id', 'unknown')}",
         system_message=CHIEF_JUSTICE_CONFIG["system_message"],
     ).with_model(LLM_PROVIDER, LLM_MODEL)
 
-    analyses_text = ""
-    for member_id, label in [
-        ("prosecution", "Prosecution Analyst"),
-        ("defense", "Defense Analyst"),
-        ("legal_scholar", "Legal Scholar"),
-        ("bias_detector", "Judicial Bias Analyst"),
-    ]:
+    member_labels = [
+        ("prosecution", "Counsel Maximus — Prosecution Analyst"),
+        ("defense", "Counsel Veridicus — Defense Analyst"),
+        ("legal_scholar", "Professor Lexis — Legal Scholar"),
+        ("bias_detector", "Analyst Veritas — Judicial Bias Analyst"),
+    ]
+
+    stage1_text = ""
+    for member_id, label in member_labels:
         member_data = members_data.get(member_id, {})
         analysis = member_data.get("analysis", {})
-        analyses_text += f"\n\n=== {label} ===\n{json.dumps(analysis, indent=2)}"
+        stage1_text += f"\n\n=== {label} ===\n{json.dumps(analysis, indent=2)}"
+
+    stage2_text = ""
+    if cross_reviews:
+        for member_id, label in member_labels:
+            review = cross_reviews.get(member_id, {}).get("analysis", {})
+            if review:
+                stage2_text += f"\n\n=== {label} — Cross-Review ===\n{json.dumps(review, indent=2)}"
 
     case_prompt = build_case_prompt(case_data)
     message = (
         f"CASE INFORMATION:\n{case_prompt}\n\n"
-        f"COUNCIL MEMBER ANALYSES:\n{analyses_text}\n\n"
-        "Please synthesize these analyses into your final Council verdict."
+        f"=== STAGE 1: INDIVIDUAL ANALYSES ==={stage1_text}\n\n"
+        f"=== STAGE 2: CROSS-REVIEW DELIBERATIONS ==={stage2_text if stage2_text else chr(10) + '(Cross-review not available)'}\n\n"
+        "Please synthesize all stages into your final Council verdict."
     )
 
-    user_message = UserMessage(text=message)
-
     try:
-        response = await chat.send_message(user_message)
+        response = await chat.send_message(UserMessage(text=message))
         return extract_json_from_response(response)
     except Exception as e:
         logger.error(f"Chief justice synthesis failed: {e}")

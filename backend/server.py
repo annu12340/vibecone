@@ -111,6 +111,7 @@ async def start_analysis(case_id: str, background_tasks: BackgroundTasks):
             "legal_scholar": {"status": "analyzing"},
             "bias_detector": {"status": "analyzing"},
         },
+        "cross_reviews": {},
         "chief_justice": {"status": "pending"},
         "similar_cases": [],
         "relevant_laws": [],
@@ -173,25 +174,21 @@ async def seed_database():
 # --- Background Council Analysis Task ---
 async def run_council_analysis(case_id: str, case_data: dict):
     """Run the full LLM Council analysis as a background task."""
-    from llm_council import analyze_member, synthesize_chief_justice
+    from llm_council import analyze_member, cross_review_member, synthesize_chief_justice
+
+    member_ids = ["prosecution", "defense", "legal_scholar", "bias_detector"]
 
     try:
         logger.info(f"Starting council analysis for case {case_id}")
 
-        # Stage 1: Run all 4 analyses in parallel
-        tasks = [
-            analyze_member("prosecution", case_data),
-            analyze_member("defense", case_data),
-            analyze_member("legal_scholar", case_data),
-            analyze_member("bias_detector", case_data),
-        ]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # --- Stage 1: Independent analyses (parallel) ---
+        stage1_tasks = [analyze_member(mid, case_data) for mid in member_ids]
+        stage1_results = await asyncio.gather(*stage1_tasks, return_exceptions=True)
 
-        member_ids = ["prosecution", "defense", "legal_scholar", "bias_detector"]
         members_data = {}
-        for member_id, result in zip(member_ids, results):
+        for member_id, result in zip(member_ids, stage1_results):
             if isinstance(result, Exception):
-                logger.error(f"Member {member_id} analysis failed: {result}")
+                logger.error(f"Stage 1 member {member_id} failed: {result}")
                 members_data[member_id] = {"status": "failed", "error": str(result)}
             else:
                 members_data[member_id] = {"status": "complete", "analysis": result}
@@ -204,7 +201,7 @@ async def run_council_analysis(case_id: str, case_data: dict):
                 }},
             )
 
-        # Extract similar cases and laws from legal scholar
+        # Extract similar cases and laws from legal scholar (Stage 1)
         scholar = members_data.get("legal_scholar", {}).get("analysis", {})
         similar_cases = scholar.get("precedent_cases", [])
         relevant_laws = scholar.get("applicable_laws", [])
@@ -212,15 +209,49 @@ async def run_council_analysis(case_id: str, case_data: dict):
         await db.analyses.update_one(
             {"case_id": case_id},
             {"$set": {
-                "stage": 3,
+                "stage": 2,
                 "similar_cases": similar_cases,
                 "relevant_laws": relevant_laws,
-                "chief_justice.status": "analyzing",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }},
         )
+        logger.info(f"Stage 1 complete for case {case_id} — starting Stage 2 cross-review")
 
-        # Stage 3: Chief Justice synthesis
-        synthesis = await synthesize_chief_justice(case_data, members_data)
+        # --- Stage 2: Cross-review deliberation (parallel) ---
+        cross_review_tasks = [
+            cross_review_member(mid, case_data, members_data.get(mid, {}).get("analysis", {}), members_data)
+            for mid in member_ids
+        ]
+        cross_review_results = await asyncio.gather(*cross_review_tasks, return_exceptions=True)
+
+        cross_reviews = {}
+        for member_id, result in zip(member_ids, cross_review_results):
+            if isinstance(result, Exception):
+                logger.error(f"Stage 2 cross-review {member_id} failed: {result}")
+                cross_reviews[member_id] = {"status": "failed", "error": str(result)}
+            else:
+                cross_reviews[member_id] = {"status": "complete", "analysis": result}
+
+            await db.analyses.update_one(
+                {"case_id": case_id},
+                {"$set": {
+                    f"cross_reviews.{member_id}": cross_reviews[member_id],
+                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                }},
+            )
+
+        await db.analyses.update_one(
+            {"case_id": case_id},
+            {"$set": {
+                "stage": 3,
+                "chief_justice.status": "analyzing",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }},
+        )
+        logger.info(f"Stage 2 cross-review complete for case {case_id} — starting Chief Justice synthesis")
+
+        # --- Stage 3: Chief Justice synthesis (uses Stage 1 + Stage 2) ---
+        synthesis = await synthesize_chief_justice(case_data, members_data, cross_reviews)
 
         await db.analyses.update_one(
             {"case_id": case_id},
