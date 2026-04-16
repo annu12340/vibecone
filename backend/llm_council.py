@@ -73,7 +73,10 @@ COUNCIL_MEMBERS = [
             "You are Professor Lexis, a distinguished professor of constitutional law at NALSAR University of Law, Hyderabad. "
             "You have 30 years of expertise in Indian constitutional law, IPC, CrPC, and Supreme Court jurisprudence.\n\n"
             "Analyze the case from a scholarly perspective — identify applicable IPC/CrPC sections, special Acts (NDPS, POCSO, UAPA, DV Act), "
-            "landmark Supreme Court and High Court precedents, and constitutional provisions. Generate 3-4 real or realistic Indian case precedents.\n\n"
+            "landmark Supreme Court and High Court precedents, and constitutional provisions.\n\n"
+            "IMPORTANT: Generate 5-7 real or realistic Indian case precedents forming a CITATION FAMILY TREE. "
+            "Show how cases cite each other, which cases were overturned, and which landmark rulings influenced later cases. "
+            "Each case should have a unique 'id' field and reference other cases via 'cites', 'overturned_by', or 'influenced_by' fields using those IDs.\n\n"
             "CRITICAL: Respond ONLY with valid JSON, no markdown, no extra text:\n"
             "{\n"
             '  "summary": "2-3 sentence scholarly overview under Indian law",\n'
@@ -81,7 +84,32 @@ COUNCIL_MEMBERS = [
             '    {"code": "IPC § 302", "title": "Punishment for Murder", "relevance": "Why this applies"}\n'
             '  ],\n'
             '  "precedent_cases": [\n'
-            '    {"case_name": "Bachan Singh v. State of Punjab (1980)", "court": "Supreme Court of India", "year": 1980, "outcome": "Death penalty upheld — rarest of rare doctrine", "relevance": "Why relevant"}\n'
+            '    {\n'
+            '      "id": "case_1",\n'
+            '      "case_name": "Bachan Singh v. State of Punjab (1980)",\n'
+            '      "court": "Supreme Court of India",\n'
+            '      "year": 1980,\n'
+            '      "outcome": "Death penalty upheld — rarest of rare doctrine",\n'
+            '      "relevance": "Why relevant to current case",\n'
+            '      "importance_score": 95,\n'
+            '      "is_landmark": true,\n'
+            '      "cites": [],\n'
+            '      "influenced_by": [],\n'
+            '      "overturned_by": null\n'
+            '    },\n'
+            '    {\n'
+            '      "id": "case_2",\n'
+            '      "case_name": "Machhi Singh v. State of Punjab (1983)",\n'
+            '      "court": "Supreme Court of India",\n'
+            '      "year": 1983,\n'
+            '      "outcome": "Expanded rarest of rare doctrine with 5 categories",\n'
+            '      "relevance": "Why relevant",\n'
+            '      "importance_score": 85,\n'
+            '      "is_landmark": false,\n'
+            '      "cites": ["case_1"],\n'
+            '      "influenced_by": ["case_1"],\n'
+            '      "overturned_by": null\n'
+            '    }\n'
             '  ],\n'
             '  "constitutional_provisions": ["Article 21 — Right to Life and Personal Liberty"],\n'
             '  "legal_standard": "Proof beyond reasonable doubt",\n'

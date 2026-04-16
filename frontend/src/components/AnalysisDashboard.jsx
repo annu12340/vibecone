@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { Scale, ArrowLeft, AlertCircle, CheckCircle2, Clock, RefreshCw, BookOpen, Gavel, ExternalLink } from "lucide-react";
+import { Scale, ArrowLeft, AlertCircle, CheckCircle2, Clock, RefreshCw, BookOpen, Gavel, ExternalLink, GitBranch } from "lucide-react";
+import PrecedentTreeModal from "./PrecedentTreeModal";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -363,23 +364,58 @@ function ChiefJusticeCard({ chiefData }) {
   );
 }
 
-function SimilarCasesPanel({ cases }) {
+function SimilarCasesPanel({ cases, onViewTree }) {
   if (!cases?.length) return null;
   return (
     <div className="bg-white border border-slate-200" data-testid="similar-cases-panel">
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-        <Gavel className="w-4 h-4 text-slate-500" />
-        <h4 className="font-playfair text-base text-slate-900">Similar Cases</h4>
+      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Gavel className="w-4 h-4 text-slate-500" />
+          <h4 className="font-playfair text-base text-slate-900">Precedent Cases</h4>
+        </div>
+        <button
+          onClick={onViewTree}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[#C5A059] hover:text-[#0B192C] hover:bg-[#C5A059]/10 border border-[#C5A059]/30 hover:border-[#C5A059] transition-colors"
+          data-testid="view-precedent-tree-btn"
+        >
+          <GitBranch className="w-3.5 h-3.5" />
+          View Family Tree
+        </button>
       </div>
       <div className="divide-y divide-slate-100">
         {cases.slice(0, 5).map((c, i) => (
-          <div key={i} className="px-4 py-3">
-            <p className="text-sm font-medium text-slate-900">{c.case_name}</p>
+          <div key={c.id || i} className="px-4 py-3">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-medium text-slate-900">{c.case_name}</p>
+              {c.is_landmark && (
+                <span className="text-[9px] px-1.5 py-0.5 bg-[#C5A059] text-white shrink-0">LANDMARK</span>
+              )}
+            </div>
             <p className="text-xs text-slate-500 mt-0.5">{c.court} — {c.year}</p>
             <p className="text-xs text-slate-600 mt-1">{c.outcome}</p>
+            {c.importance_score && (
+              <div className="flex items-center gap-2 mt-2">
+                <div className="flex-1 h-1 bg-slate-100">
+                  <div 
+                    className="h-full bg-[#C5A059]" 
+                    style={{ width: `${c.importance_score}%` }} 
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400">{c.importance_score}%</span>
+              </div>
+            )}
           </div>
         ))}
       </div>
+      {cases.length > 5 && (
+        <button
+          onClick={onViewTree}
+          className="w-full px-4 py-2.5 text-xs text-[#C5A059] hover:bg-[#C5A059]/5 border-t border-slate-100 flex items-center justify-center gap-1.5"
+        >
+          <GitBranch className="w-3 h-3" />
+          View all {cases.length} cases in Family Tree
+        </button>
+      )}
     </div>
   );
 }
@@ -412,6 +448,7 @@ export default function AnalysisDashboard() {
   const [caseData, setCaseData] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [pageStatus, setPageStatus] = useState("loading");
+  const [isTreeModalOpen, setIsTreeModalOpen] = useState(false);
   const pollingRef = useRef(null);
 
   const stopPolling = () => {
@@ -566,7 +603,10 @@ export default function AnalysisDashboard() {
 
           {/* Sidebar — 1 col */}
           <div className="space-y-4">
-            <SimilarCasesPanel cases={analysis?.similar_cases} />
+            <SimilarCasesPanel 
+              cases={analysis?.similar_cases} 
+              onViewTree={() => setIsTreeModalOpen(true)} 
+            />
             <LawsPanel laws={analysis?.relevant_laws} />
 
             {/* Case facts quick view */}
@@ -594,6 +634,14 @@ export default function AnalysisDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Precedent Tree Modal */}
+      <PrecedentTreeModal
+        isOpen={isTreeModalOpen}
+        onClose={() => setIsTreeModalOpen(false)}
+        precedentCases={analysis?.similar_cases}
+        currentCaseTitle={caseData?.title}
+      />
     </div>
   );
 }
