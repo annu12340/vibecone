@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { ArrowLeft, AlertCircle, RefreshCw, Users, MessageSquare, Scale, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, AlertCircle, RefreshCw, Users, MessageSquare, Scale, CheckCircle2, User } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CouncilCard } from "./analysis/CouncilCard";
 import { CrossReviewSection } from "./analysis/CrossReviewSection";
 import { ChiefJusticeCard } from "./analysis/ChiefJusticeCard";
 import { JudgeIntelligencePanel } from "./analysis/JudgeIntelligencePanel";
+import { JudgeProfileTab } from "./analysis/JudgeProfileTab";
 import { SidebarPanels } from "./analysis/SidebarPanels";
 import { STAGE_LABELS, MEMBER_ORDER } from "./analysis/constants";
 
@@ -250,6 +251,14 @@ export default function AnalysisDashboard() {
                     <span className="ml-2 text-[10px] bg-[#C5A059]/15 text-[#C5A059] px-1.5 py-0.5 rounded-sm font-semibold">Ready</span>
                   )}
                 </TabsTrigger>
+                <TabsTrigger
+                  value="judge"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-[#C5A059] data-[state=active]:bg-[#FAF9F6] data-[state=active]:shadow-none px-5 py-3.5 text-sm font-medium data-[state=active]:text-[#0B192C] text-slate-500 hover:text-slate-700 transition-colors"
+                  data-testid="tab-judge-profile"
+                >
+                  <User className="w-3.5 h-3.5 mr-2" />
+                  Judge Profile
+                </TabsTrigger>
               </TabsList>
 
               {/* Tab 1: Individual Analyses */}
@@ -277,13 +286,21 @@ export default function AnalysisDashboard() {
                 )}
                 <ChiefJusticeCard chiefData={chiefData} />
               </TabsContent>
+
+              {/* Tab 4: Judge Profile */}
+              <TabsContent value="judge" className="mt-6" data-testid="tab-content-judge">
+                <JudgeProfileTab
+                  judgeSnapshot={analysis?.judge_profile_snapshot}
+                  caseJudgeName={caseData?.judge_name}
+                />
+              </TabsContent>
             </Tabs>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-            {/* Judge Intelligence in sidebar when not on verdict tab */}
-            {activeTab !== "verdict" && analysis?.judge_profile_snapshot && (
+            {/* Judge Intelligence in sidebar when not on verdict/judge tabs */}
+            {activeTab !== "verdict" && activeTab !== "judge" && analysis?.judge_profile_snapshot && (
               <JudgeIntelligencePanel
                 judgeSnapshot={analysis.judge_profile_snapshot}
                 stage={stage}
