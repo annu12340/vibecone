@@ -8,6 +8,7 @@ import CaseSubmission from "./components/CaseSubmission";
 import AnalysisDashboard from "./components/AnalysisDashboard";
 import JudgeProfiles from "./components/JudgeProfiles";
 import CaseHistory from "./components/CaseHistory";
+import CaseMap from "./components/CaseMap";
 
 import FineManagement from "./components/FineManagement";
 import PrisonerManagement from "./components/PrisonerManagement";
@@ -42,6 +43,11 @@ function App() {
             <Route path="/history" element={
               <RoleGuard requiredRole="commonUser">
                 <CaseHistory />
+              </RoleGuard>
+            } />
+            <Route path="/map" element={
+              <RoleGuard requiredRole="commonUser">
+                <CaseMap />
               </RoleGuard>
             } />
             

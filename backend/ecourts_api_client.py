@@ -21,10 +21,12 @@ class ECourtsAPIClient:
         self.base_url = os.environ.get('ECOURTS_API_URL', 'https://webapi.ecourtsindia.com')
         self.api_key = os.environ.get('ECOURTS_API_KEY', '')
         self.timeout = 30
-        # API is disabled - we use MCP tools for data fetching
-        self.api_available = False
+        self.api_available = bool(self.api_key)
         
-        logger.info("eCourts API Client initialized in MCP mode (API disabled)")
+        if self.api_available:
+            logger.info("eCourts API Client initialized with API key")
+        else:
+            logger.warning("ECOURTS_API_KEY not set — eCourts API disabled, will fall back to Indian Kanoon")
         
     def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Optional[Dict]:
         """Make HTTP request to eCourts API"""
