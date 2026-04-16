@@ -1,26 +1,69 @@
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { UserProvider } from "./context/UserContext";
 import Navbar from "./components/Navbar";
+import RoleGuard from "./components/RoleGuard";
 import LandingPage from "./components/LandingPage";
 import CaseSubmission from "./components/CaseSubmission";
 import AnalysisDashboard from "./components/AnalysisDashboard";
 import JudgeProfiles from "./components/JudgeProfiles";
 import CaseHistory from "./components/CaseHistory";
+import FineManagement from "./components/FineManagement";
+import PrisonerManagement from "./components/PrisonerManagement";
+import RewardFundDashboard from "./components/RewardFundDashboard";
 
 function App() {
   return (
-    <div className="App font-ibmplex">
-      <BrowserRouter>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/submit" element={<CaseSubmission />} />
-          <Route path="/analysis/:caseId" element={<AnalysisDashboard />} />
-          <Route path="/judges" element={<JudgeProfiles />} />
-          <Route path="/history" element={<CaseHistory />} />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <UserProvider>
+      <div className="App font-ibmplex">
+        <BrowserRouter>
+          <Navbar />
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<LandingPage />} />
+            
+            {/* Common User routes */}
+            <Route path="/submit" element={
+              <RoleGuard requiredRole="commonUser">
+                <CaseSubmission />
+              </RoleGuard>
+            } />
+            <Route path="/analysis/:caseId" element={
+              <RoleGuard requiredRole="commonUser">
+                <AnalysisDashboard />
+              </RoleGuard>
+            } />
+            <Route path="/judges" element={
+              <RoleGuard requiredRole="commonUser">
+                <JudgeProfiles />
+              </RoleGuard>
+            } />
+            <Route path="/history" element={
+              <RoleGuard requiredRole="commonUser">
+                <CaseHistory />
+              </RoleGuard>
+            } />
+            
+            {/* Authority routes */}
+            <Route path="/fines" element={
+              <RoleGuard requiredRole="authority">
+                <FineManagement />
+              </RoleGuard>
+            } />
+            <Route path="/prisoners" element={
+              <RoleGuard requiredRole="authority">
+                <PrisonerManagement />
+              </RoleGuard>
+            } />
+            <Route path="/reward-fund" element={
+              <RoleGuard requiredRole="authority">
+                <RewardFundDashboard />
+              </RoleGuard>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    </UserProvider>
   );
 }
 
