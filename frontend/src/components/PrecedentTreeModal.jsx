@@ -30,11 +30,12 @@ function buildGraphData(precedentCases, currentCaseTitle) {
   const nodes = [];
   const links = [];
   const nodeMap = new Map();
+  const linkSet = new Set(); // Track unique links
 
   // Add current case as the central node
   const currentNode = {
     id: "current_case",
-    name: currentCaseTitle || "Current Case",
+    name: currentCaseTitle || "Your Case",
     court: "Under Analysis",
     year: new Date().getFullYear(),
     outcome: "Pending analysis",
@@ -72,55 +73,49 @@ function buildGraphData(precedentCases, currentCaseTitle) {
     nodeMap.set(nodeId, node);
   });
 
-  // Create links between cases
+  // Helper to add unique links
+  const addLink = (source, target, type) => {
+    const key = `${source}->${target}`;
+    if (!linkSet.has(key) && nodeMap.has(source) && nodeMap.has(target)) {
+      linkSet.add(key);
+      links.push({ source, target, type });
+    }
+  };
+
+  // Create links between cases (only meaningful relationships)
   precedentCases.forEach((c, index) => {
     const sourceId = c.id || `case_${index}`;
     
     // Citation links (this case cites other cases)
     if (c.cites && Array.isArray(c.cites)) {
       c.cites.forEach(targetId => {
-        if (nodeMap.has(targetId)) {
-          links.push({
-            source: sourceId,
-            target: targetId,
-            type: "cites",
-            label: "cites",
-          });
-        }
+        addLink(sourceId, targetId, "cites");
       });
     }
 
     // Influence links (this case was influenced by other cases)
+    // Only add if not already a citation link
     if (c.influenced_by && Array.isArray(c.influenced_by)) {
       c.influenced_by.forEach(targetId => {
-        if (nodeMap.has(targetId)) {
-          links.push({
-            source: targetId,
-            target: sourceId,
-            type: "influenced_by",
-            label: "influenced",
-          });
+        const citesKey = `${sourceId}->${targetId}`;
+        if (!linkSet.has(citesKey)) {
+          addLink(targetId, sourceId, "influenced_by");
         }
       });
     }
 
     // Overturned links
     if (c.overturned_by && nodeMap.has(c.overturned_by)) {
-      links.push({
-        source: c.overturned_by,
-        target: sourceId,
-        type: "overturned_by",
-        label: "overturned",
-      });
+      addLink(c.overturned_by, sourceId, "overturned_by");
     }
+  });
 
-    // Connect all precedent cases to current case (they're all relevant)
-    links.push({
-      source: sourceId,
-      target: "current_case",
-      type: "cites",
-      label: "precedent for",
-    });
+  // Only connect LANDMARK cases directly to current case (reduce clutter)
+  precedentCases.forEach((c, index) => {
+    const sourceId = c.id || `case_${index}`;
+    if (c.is_landmark) {
+      addLink(sourceId, "current_case", "cites");
+    }
   });
 
   return { nodes, links };
@@ -348,12 +343,12 @@ export default function PrecedentTreeModal({ isOpen, onClose, precedentCases, cu
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  // Center graph when opened
+  // Center graph when opened with appropriate padding
   useEffect(() => {
     if (isOpen && graphRef.current) {
       setTimeout(() => {
-        graphRef.current.zoomToFit(400, 50);
-      }, 500);
+        graphRef.current.zoomToFit(600, 100);
+      }, 800);
     }
   }, [isOpen]);
 
@@ -386,13 +381,13 @@ export default function PrecedentTreeModal({ isOpen, onClose, precedentCases, cu
     setSelectedNode(node);
   }, []);
 
-  // Custom node rendering
+  // Custom node rendering - SMALLER nodes to reduce clutter
   const nodeCanvasObject = useCallback((node, ctx, globalScale) => {
     const label = node.name?.split(" v.")[0] || node.name || "Case";
-    const fontSize = Math.max(10, 12 / globalScale);
+    const fontSize = 10 / globalScale;
     ctx.font = `${fontSize}px IBM Plex Sans, sans-serif`;
     
-    // Determine node color and size
+    // Determine node color
     let nodeColor = NODE_COLORS.normal;
     if (node.is_current) {
       nodeColor = NODE_COLORS.current;
@@ -402,34 +397,38 @@ export default function PrecedentTreeModal({ isOpen, onClose, precedentCases, cu
       nodeColor = NODE_COLORS.overturned;
     }
 
-    // Size based on importance score (min 5, max 15)
-    const baseSize = 5 + ((node.importance_score || 50) / 100) * 10;
-    const nodeSize = node.is_current ? baseSize + 3 : baseSize;
+    // Smaller nodes - scale with zoom but cap size
+    const importanceFactor = (node.importance_score || 50) / 100;
+    const baseSize = (3 + importanceFactor * 3) / globalScale;
+    const nodeSize = node.is_current ? baseSize * 1.3 : baseSize;
+    const maxSize = 15 / globalScale;
+    const finalSize = Math.min(nodeSize, maxSize);
 
     // Draw node circle
     ctx.beginPath();
-    ctx.arc(node.x, node.y, nodeSize, 0, 2 * Math.PI);
+    ctx.arc(node.x, node.y, finalSize, 0, 2 * Math.PI);
     ctx.fillStyle = nodeColor;
     ctx.fill();
 
     // Add border for landmark/current cases
     if (node.is_landmark || node.is_current) {
       ctx.strokeStyle = "#C5A059";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1.5 / globalScale;
       ctx.stroke();
     }
 
-    // Draw label
+    // Draw label - always show
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#1e293b";
     
-    // Position label below node
-    const labelY = node.y + nodeSize + fontSize;
-    ctx.fillText(label.substring(0, 20) + (label.length > 20 ? "..." : ""), node.x, labelY);
+    // Position label below node with padding
+    const labelY = node.y + finalSize + fontSize + 2;
+    const shortLabel = label.substring(0, 18) + (label.length > 18 ? "..." : "");
+    ctx.fillText(shortLabel, node.x, labelY);
   }, []);
 
-  // Custom link rendering
+  // Custom link rendering - thinner lines
   const linkCanvasObject = useCallback((link, ctx) => {
     const start = link.source;
     const end = link.target;
@@ -443,11 +442,11 @@ export default function PrecedentTreeModal({ isOpen, onClose, precedentCases, cu
     ctx.moveTo(start.x, start.y);
     ctx.lineTo(end.x, end.y);
     ctx.strokeStyle = linkColor;
-    ctx.lineWidth = link.type === "overturned_by" ? 2 : 1;
+    ctx.lineWidth = link.type === "overturned_by" ? 1.5 : 0.75;
     
     // Dashed line for influence
     if (link.type === "influenced_by") {
-      ctx.setLineDash([5, 3]);
+      ctx.setLineDash([4, 2]);
     } else {
       ctx.setLineDash([]);
     }
@@ -455,10 +454,10 @@ export default function PrecedentTreeModal({ isOpen, onClose, precedentCases, cu
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Draw arrow
+    // Draw smaller arrow
     const angle = Math.atan2(end.y - start.y, end.x - start.x);
-    const arrowLength = 8;
-    const nodeRadius = 15;
+    const arrowLength = 5;
+    const nodeRadius = 8;
     
     const arrowX = end.x - nodeRadius * Math.cos(angle);
     const arrowY = end.y - nodeRadius * Math.sin(angle);
@@ -466,12 +465,12 @@ export default function PrecedentTreeModal({ isOpen, onClose, precedentCases, cu
     ctx.beginPath();
     ctx.moveTo(arrowX, arrowY);
     ctx.lineTo(
-      arrowX - arrowLength * Math.cos(angle - Math.PI / 6),
-      arrowY - arrowLength * Math.sin(angle - Math.PI / 6)
+      arrowX - arrowLength * Math.cos(angle - Math.PI / 7),
+      arrowY - arrowLength * Math.sin(angle - Math.PI / 7)
     );
     ctx.lineTo(
-      arrowX - arrowLength * Math.cos(angle + Math.PI / 6),
-      arrowY - arrowLength * Math.sin(angle + Math.PI / 6)
+      arrowX - arrowLength * Math.cos(angle + Math.PI / 7),
+      arrowY - arrowLength * Math.sin(angle + Math.PI / 7)
     );
     ctx.closePath();
     ctx.fillStyle = linkColor;
@@ -555,20 +554,29 @@ export default function PrecedentTreeModal({ isOpen, onClose, precedentCases, cu
               linkCanvasObject={linkCanvasObject}
               onNodeHover={handleNodeHover}
               onNodeClick={handleNodeClick}
-              nodeRelSize={4}
+              nodeRelSize={3}
               linkDirectionalArrowLength={0}
               linkDirectionalArrowRelPos={1}
-              d3AlphaDecay={0.02}
-              d3VelocityDecay={0.25}
-              cooldownTime={3000}
-              warmupTicks={100}
+              d3AlphaDecay={0.01}
+              d3VelocityDecay={0.2}
+              cooldownTime={5000}
+              warmupTicks={200}
               enableNodeDrag={true}
               enableZoomInteraction={true}
               enablePanInteraction={true}
-              linkDistance={120}
+              linkDistance={180}
               dagMode={null}
-              minZoom={0.3}
-              maxZoom={5}
+              minZoom={0.2}
+              maxZoom={8}
+              d3Force={(name, force) => {
+                // Add stronger repulsion to spread nodes apart
+                if (name === 'charge') {
+                  force.strength(-300);
+                }
+                if (name === 'link') {
+                  force.distance(180);
+                }
+              }}
             />
 
             {/* Legend */}
