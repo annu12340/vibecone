@@ -1,0 +1,52 @@
+{
+  "data": {
+    "courtCaseData": {
+      "cnr": "DLHC010127602024",
+      "caseNumber": "202400000822024",
+      "state": "DL",
+      "courtName": "DLHC",
+      "caseType": "FA",
+      "caseTypeRaw": "FAO - First Appeal",
+      "caseStatus": "PENDING",
+      "filingDate": "2024-03-07",
+      "registrationDate": "2024-03-12",
+      "firstHearingDate": "2024-03-13",
+      "nextHearingDate": "2025-05-26",
+      "lastHearingDate": "2025-05-26",
+      "decisionDate": null,
+      "judges": ["DHARMESH SHARMA"],
+      "petitioners": ["Hav Narender Singh"],
+      "petitionerAdvocates": ["RAKESH DAHIYA"],
+      "respondents": ["Indian Ex Services League through Its President"],
+      "respondentAdvocates": [],
+      "actsAndSections": ["Civil Procedure Code, 1908 - Section 104", "Order 43 Rule 1"],
+      "interimOrders": [
+        {"orderDate": "2024-03-13", "orderUrl": "order-1.pdf"},
+        {"orderDate": "2025-05-26", "orderUrl": "order-6.pdf"}
+      ],
+      "hasOrders": true,
+      "orderCount": 6
+    }
+  },
+  "latestOrderAnalysis": {
+    "data": {
+      "aiAnalysis": {
+        "intelligent_insights_analytics": {
+          "order_significance_and_impact_assessment": {
+            "ai_generated_executive_summary": "The Delhi High Court adjourned the First Appeal due to insufficient time available for hearing and judgment. The matter has been rescheduled for September 3, 2025.",
+            "plain_language_summary_for_litigants_outcome_focused": "Your case in the Delhi High Court has been postponed to September 3, 2025, as the judge did not have enough time to hear arguments today."
+          }
+        },
+        "deep_legal_substance_context": {
+          "arguments_and_reasoning_analysis": {
+            "court_reasoning_for_decision": "The court noted that it would not be possible to pass judgment during the short period of time available.",
+            "ratio_decidendi_extracted": {
+              "statement": "Adjournment necessitated when insufficient time available for proper hearing and judgment.",
+              "confidence_score": 9
+            }
+          }
+        }
+      }
+    }
+  }
+}

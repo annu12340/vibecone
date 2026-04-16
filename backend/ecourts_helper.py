@@ -127,6 +127,12 @@ def transform_ecourts_to_unified_format(raw_ecourts_data: Dict[str, Any]) -> Dic
             "case_ai_summary": case_ai.get("summary", "") if case_ai else "",
             "case_ai_analysis": case_ai,
             
+            # Latest order AI analysis (if available from get_case_with_latest_order)
+            "latest_order_analysis": _extract_order_analysis(raw_ecourts_data),
+            
+            # Decision date
+            "decision_date": case_data.get("decisionDate", ""),
+            
             # Subordinate court details
             "subordinate_court": case_data.get("subordinateCourt", {}),
             
@@ -207,3 +213,41 @@ def format_case_for_display(case_data: Dict[str, Any]) -> Dict[str, Any]:
             "available": bool(case_data.get("case_ai_analysis")),
         },
     }
+
+
+def _extract_order_analysis(raw_ecourts_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Extract latest order AI analysis from eCourts response.
+    
+    Args:
+        raw_ecourts_data: Raw eCourts data that may contain latestOrderAnalysis
+        
+    Returns:
+        Formatted order analysis or None
+    """
+    try:
+        # Check if we have latestOrderAnalysis from get_case_with_latest_order
+        latest_order_data = raw_ecourts_data.get("latestOrderAnalysis")
+        if not latest_order_data:
+            return None
+        
+        ai_data = latest_order_data.get("data", {}).get("aiAnalysis", {})
+        if not ai_data:
+            return None
+        
+        # Extract key insights
+        insights = ai_data.get("intelligent_insights_analytics", {}).get("order_significance_and_impact_assessment", {})
+        legal_substance = ai_data.get("deep_legal_substance_context", {}).get("arguments_and_reasoning_analysis", {})
+        
+        return {
+            "ai_generated_executive_summary": insights.get("ai_generated_executive_summary", ""),
+            "plain_language_summary_for_litigants_outcome_focused": insights.get("plain_language_summary_for_litigants_outcome_focused", ""),
+            "court_reasoning_for_decision": legal_substance.get("court_reasoning_for_decision", ""),
+            "ratio_decidendi_extracted": legal_substance.get("ratio_decidendi_extracted", {}),
+            "order_nature": ai_data.get("foundational_metadata", {}).get("procedural_details_from_order", {}).get("order_nature", ""),
+            "disposition_outcome": ai_data.get("foundational_metadata", {}).get("procedural_details_from_order", {}).get("disposition_outcome_if_disposed", ""),
+        }
+        
+    except Exception as e:
+        logger.error(f"Error extracting order analysis: {str(e)}")
+        return None

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { AlertCircle, Scale, Award, FileText, Gavel, Calendar, User, Building2, BookOpen } from "lucide-react";
+import { AlertCircle, Scale, Award, FileText, Gavel, Calendar, User, Building2, BookOpen, Clock, CheckCircle, TrendingRight } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -306,6 +306,243 @@ export default function CaseSubmission() {
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Case Timeline (eCourts specific) */}
+            {(caseData.filing_date || caseData.registration_date || caseData.first_hearing_date || caseData.next_hearing_date || caseData.last_hearing_date || caseData.decision_date) && (
+              <div className="bg-white border-2 border-slate-200 p-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <Clock className="w-5 h-5 text-[#C5A059]" />
+                  <h3 className="text-xs tracking-widest uppercase text-slate-500 font-bold">Case Timeline</h3>
+                </div>
+                
+                <div className="relative">
+                  {/* Timeline Line */}
+                  <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-gradient-to-b from-[#C5A059] to-slate-300"></div>
+                  
+                  <div className="space-y-6 relative">
+                    {/* Filing Date */}
+                    {caseData.filing_date && (
+                      <div className="flex gap-4 items-start">
+                        <div className="w-8 h-8 rounded-full bg-[#0B192C] border-4 border-white flex items-center justify-center z-10 shadow-md">
+                          <FileText className="w-4 h-4 text-[#C5A059]" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-xs font-bold text-[#C5A059] tracking-wider uppercase">Filing Date</p>
+                          <p className="text-sm font-semibold text-slate-900 mt-0.5">{caseData.filing_date}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Case officially filed</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Registration Date */}
+                    {caseData.registration_date && (
+                      <div className="flex gap-4 items-start">
+                        <div className="w-8 h-8 rounded-full bg-[#0B192C] border-4 border-white flex items-center justify-center z-10 shadow-md">
+                          <CheckCircle className="w-4 h-4 text-[#C5A059]" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-xs font-bold text-[#C5A059] tracking-wider uppercase">Registration Date</p>
+                          <p className="text-sm font-semibold text-slate-900 mt-0.5">{caseData.registration_date}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Case registered with number: {caseData.registration_number || 'N/A'}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* First Hearing Date */}
+                    {caseData.first_hearing_date && (
+                      <div className="flex gap-4 items-start">
+                        <div className="w-8 h-8 rounded-full bg-[#0B192C] border-4 border-white flex items-center justify-center z-10 shadow-md">
+                          <Gavel className="w-4 h-4 text-[#C5A059]" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-xs font-bold text-[#C5A059] tracking-wider uppercase">First Hearing</p>
+                          <p className="text-sm font-semibold text-slate-900 mt-0.5">{caseData.first_hearing_date}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Initial case hearing</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Last Hearing Date */}
+                    {caseData.last_hearing_date && (
+                      <div className="flex gap-4 items-start">
+                        <div className="w-8 h-8 rounded-full bg-slate-600 border-4 border-white flex items-center justify-center z-10 shadow-md">
+                          <Calendar className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-xs font-bold text-slate-600 tracking-wider uppercase">Last Hearing</p>
+                          <p className="text-sm font-semibold text-slate-900 mt-0.5">{caseData.last_hearing_date}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Most recent hearing</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Next Hearing Date */}
+                    {caseData.next_hearing_date && (
+                      <div className="flex gap-4 items-start">
+                        <div className="w-8 h-8 rounded-full bg-green-600 border-4 border-white flex items-center justify-center z-10 shadow-md animate-pulse">
+                          <TrendingRight className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-xs font-bold text-green-600 tracking-wider uppercase">Next Hearing</p>
+                          <p className="text-sm font-semibold text-green-700 mt-0.5">{caseData.next_hearing_date}</p>
+                          <p className="text-xs text-green-600 mt-0.5">Upcoming scheduled hearing</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Decision Date */}
+                    {caseData.decision_date && (
+                      <div className="flex gap-4 items-start">
+                        <div className="w-8 h-8 rounded-full bg-blue-600 border-4 border-white flex items-center justify-center z-10 shadow-md">
+                          <Award className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 pt-1">
+                          <p className="text-xs font-bold text-blue-600 tracking-wider uppercase">Decision Date</p>
+                          <p className="text-sm font-semibold text-slate-900 mt-0.5">{caseData.decision_date}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">Final decision rendered</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Acts and Sections (eCourts format) */}
+            {(caseData.acts_and_sections && caseData.acts_and_sections.length > 0) && (
+              <div className="bg-white border border-slate-200 p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Scale className="w-5 h-5 text-[#C5A059]" />
+                  <h3 className="text-xs tracking-widest uppercase text-slate-500 font-bold">Acts & Sections Invoked</h3>
+                </div>
+                <div className="space-y-2">
+                  {caseData.acts_and_sections.map((act, idx) => (
+                    <div 
+                      key={idx} 
+                      className="flex items-start gap-2 p-3 bg-slate-50 border-l-4 border-[#C5A059]"
+                    >
+                      <BookOpen className="w-4 h-4 text-[#C5A059] mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-slate-700">{act}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI Analysis Summary (if available) */}
+            {caseData.case_ai_summary && (
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 border-2 border-purple-300 p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Award className="w-5 h-5 text-purple-600" />
+                  <h3 className="text-xs tracking-widest uppercase text-purple-700 font-bold">AI Case Analysis</h3>
+                </div>
+                <p className="text-sm text-slate-700 leading-relaxed">{caseData.case_ai_summary}</p>
+              </div>
+            )}
+
+            {/* Case AI Analysis Details (if available) */}
+            {caseData.case_ai_analysis && (
+              <div className="bg-white border border-slate-200 p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="w-5 h-5 text-[#C5A059]" />
+                  <h3 className="text-xs tracking-widest uppercase text-slate-500 font-bold">Detailed Case Analysis</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Case Type */}
+                  {caseData.case_ai_analysis.caseType && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Case Type</p>
+                      <p className="text-sm text-slate-900 font-medium">{caseData.case_ai_analysis.caseType.replace(/_/g, ' ')}</p>
+                    </div>
+                  )}
+
+                  {/* Complexity */}
+                  {caseData.case_ai_analysis.complexity && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Complexity</p>
+                      <span className={`inline-block px-3 py-1 text-xs font-bold ${
+                        caseData.case_ai_analysis.complexity === 'HIGH' ? 'bg-red-100 text-red-700' :
+                        caseData.case_ai_analysis.complexity === 'MEDIUM' ? 'bg-amber-100 text-amber-700' :
+                        'bg-green-100 text-green-700'
+                      }`}>
+                        {caseData.case_ai_analysis.complexity}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Key Issues */}
+                  {caseData.case_ai_analysis.keyIssues && caseData.case_ai_analysis.keyIssues.length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Key Issues</p>
+                      <ul className="space-y-1.5">
+                        {caseData.case_ai_analysis.keyIssues.map((issue, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-[#C5A059] rounded-full mt-1.5 flex-shrink-0"></span>
+                            <span className="text-sm text-slate-700">{issue}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Case Summary */}
+                  {caseData.case_ai_analysis.caseSummary && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Summary</p>
+                      <p className="text-sm text-slate-700 leading-relaxed">{caseData.case_ai_analysis.caseSummary}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Order AI Analysis (if available) */}
+            {caseData.latest_order_analysis && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Gavel className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-xs tracking-widest uppercase text-blue-700 font-bold">Latest Order Analysis</h3>
+                </div>
+                
+                {caseData.latest_order_analysis.ai_generated_executive_summary && (
+                  <div className="mb-4">
+                    <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Executive Summary</p>
+                    <p className="text-sm text-slate-700 leading-relaxed bg-white p-4 rounded border border-blue-200">
+                      {caseData.latest_order_analysis.ai_generated_executive_summary}
+                    </p>
+                  </div>
+                )}
+
+                {caseData.latest_order_analysis.plain_language_summary_for_litigants_outcome_focused && (
+                  <div className="mb-4">
+                    <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Plain Language Summary</p>
+                    <p className="text-sm text-slate-700 leading-relaxed bg-white p-4 rounded border border-blue-200">
+                      {caseData.latest_order_analysis.plain_language_summary_for_litigants_outcome_focused}
+                    </p>
+                  </div>
+                )}
+
+                {caseData.latest_order_analysis.court_reasoning_for_decision && (
+                  <div>
+                    <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Court Reasoning</p>
+                    <p className="text-sm text-slate-700 leading-relaxed bg-white p-4 rounded border border-blue-200">
+                      {caseData.latest_order_analysis.court_reasoning_for_decision}
+                    </p>
+                  </div>
+                )}
+
+                {caseData.latest_order_analysis.ratio_decidendi_extracted && (
+                  <div className="mt-4">
+                    <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">Ratio Decidendi</p>
+                    <div className="bg-white p-4 rounded border border-blue-200">
+                      <p className="text-sm text-slate-700 leading-relaxed italic">{caseData.latest_order_analysis.ratio_decidendi_extracted.statement}</p>
+                      <p className="text-xs text-slate-500 mt-2">Confidence: {caseData.latest_order_analysis.ratio_decidendi_extracted.confidence_score}/10</p>
+                    </div>
                   </div>
                 )}
               </div>

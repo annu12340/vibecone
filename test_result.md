@@ -239,15 +239,18 @@ backend:
 frontend:
   - task: "eCourts Integration with Fallback UI"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/components/CaseSubmission.jsx"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Updated /submit page to use merged endpoint /api/cases/search-by-cnr that tries eCourts first then Indian Kanoon. Page header changed to 'eCourts Case Lookup' with description mentioning official eCourts database with automatic fallback. Added data source badge showing '⚖️ eCourts Official' (blue) or '📚 Indian Kanoon' (amber) with optional '(Fallback)' indicator. Enhanced metadata display to show eCourts-specific fields: case_status, case_type_full, next_hearing_date (in green), filing_date. Added Parties Information section displaying petitioners/respondents with their advocates. Supports display of judges array from eCourts. All fields conditionally rendered based on data availability."
+      - working: true
+        agent: "main"
+        comment: "MAJOR ENHANCEMENT: Added comprehensive data display including: 1) Case Timeline - Visual timeline with icons showing filing date, registration date, first hearing, last hearing, next hearing (animated), and decision date with gradient line connector. 2) Acts & Sections - Displays invoked legal provisions with left border highlight. 3) AI Case Analysis - Shows case summary, type, complexity (with colored badges), and key issues. 4) Latest Order AI Analysis - Displays executive summary, plain language summary, court reasoning, and ratio decidendi with confidence score. All sections conditionally rendered and styled for clear visual hierarchy."
 
   - task: "Indian Kanoon CNR Fetch Integration"
     implemented: true
