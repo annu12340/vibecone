@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Scale, Users, History, Menu, X, FileText, DollarSign, UserCheck, Award, Users2, Building2 } from "lucide-react";
+
+
+import { Scale, Users, History, Menu, X, FileText, DollarSign, UserCheck, Award, Users2, Building2, MapPin } from "lucide-react";
 import { useUser } from "../context/UserContext";
+
 
 // Common Users navigation
 const COMMON_USER_LINKS = [
   { to: "/submit", label: "Analyze Case", icon: FileText },
   { to: "/judges", label: "Judge Profiles", icon: Users },
+  { to: "/map", label: "Case Map", icon: MapPin },
   { to: "/history", label: "Case History", icon: History },
 ];
 
@@ -28,7 +32,7 @@ export default function Navbar() {
   const navLinks = isCommonUser ? COMMON_USER_LINKS : AUTHORITY_LINKS;
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200" data-testid="navbar">
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-200/60 shadow-sm" data-testid="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -78,14 +82,15 @@ export default function Navbar() {
                 data-testid={`nav-link-${label.toLowerCase().replace(/\s/g, "-")}`}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-ibmplex transition-colors ${
                   isActive(to)
-                    ? "text-[#0B192C] font-medium border-b-2 border-[#C5A059]"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                    ? "text-[#0B192C] font-semibold border-b-2 border-[#C5A059]"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50/80"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {label}
               </Link>
             ))}
+
             
             {/* CTA button - only for common users */}
             {isCommonUser && (
@@ -97,6 +102,7 @@ export default function Navbar() {
                 New Analysis
               </Link>
             )}
+
           </nav>
 
           {/* Mobile toggle */}

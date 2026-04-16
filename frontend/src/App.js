@@ -8,6 +8,7 @@ import CaseSubmission from "./components/CaseSubmission";
 import AnalysisDashboard from "./components/AnalysisDashboard";
 import JudgeProfiles from "./components/JudgeProfiles";
 import CaseHistory from "./components/CaseHistory";
+
 import FineManagement from "./components/FineManagement";
 import PrisonerManagement from "./components/PrisonerManagement";
 import RewardFundDashboard from "./components/RewardFundDashboard";
@@ -64,6 +65,7 @@ function App() {
         </BrowserRouter>
       </div>
     </UserProvider>
+
   );
 }
 
