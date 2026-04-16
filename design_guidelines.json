@@ -1,62 +1,31 @@
 {
-  "theme": "light",
-  "archetype": "Swiss & High-Contrast / Authority",
+  "theme": "Light",
+  "archetype": "5 - Jewel & Luxury (Premium Legal/Authority)",
+  "global_instructions": "Improve overall colors, header, and professional feel without altering the layout. Keep the navy and gold brand identity but elevate it with gradients, soft glows, and warmer neutrals to make it feel more approachable yet authoritative.",
   "colors": {
-    "primary": "#0B192C",
-    "accent": "#C5A059",
-    "background": "#F8F9FA",
-    "surface": "#FFFFFF",
-    "surface_dark": "#0B192C",
-    "text_main": "#0B192C",
-    "text_muted": "#475569",
-    "border": "#E2E8F0",
-    "success": "#2E7D32",
-    "danger": "#C62828"
+    "background_warm": "#FAF9F6",
+    "card_bg": "#FFFFFF",
+    "primary_navy": "#0A1428",
+    "primary_navy_light": "#12223A",
+    "accent_gold": "#C5A059",
+    "border_soft": "rgba(11, 25, 44, 0.08)"
   },
   "typography": {
-    "headings": "Playfair Display",
-    "body": "IBM Plex Sans",
-    "h1": "text-4xl tracking-tight font-black text-[#0B192C]",
-    "h2": "text-2xl tracking-tight font-bold text-[#0B192C]",
-    "h3": "text-xl font-semibold text-[#0B192C]",
-    "h4": "text-sm uppercase tracking-[0.2em] font-medium text-[#475569]",
-    "body_text": "text-base leading-relaxed text-[#0B192C]",
-    "small_text": "text-sm text-[#475569]"
+    "headings": "Playfair Display, serif (add `tracking-tight` for large headings)",
+    "body": "IBM Plex Sans, sans-serif",
+    "labels": "tracking-[0.15em] uppercase text-[10px] sm:text-xs font-semibold"
   },
-  "layout_strategy": {
-    "overall_layout": "Grid-based 2-column layout on desktop: Left column (Main Analysis, spans 8 or 9 cols) and Right column (Context Sidebar, spans 4 or 3 cols). Mobile follows a stacked layout.",
-    "spacing": "Generous internal padding (p-6 or p-8) inside cards. Use gap-6 or gap-8 for grid layouts to let the dense text breathe.",
-    "borders_and_shadows": "Strictly sharp UI: rounded-none or rounded-sm maximum. No box-shadows. Rely entirely on 1px solid borders (border-[#E2E8F0]) for structural definition.",
-    "header_section": "Full-width top section. Contains Case Title (H1, Playfair), Type, Jurisdiction, Presiding Judge, and Status Badge. Followed immediately by the Stage Progress Bar.",
-    "hero_verdict": "Chief Justice Final Verdict Card must be extracted from the bottom and placed at the TOP of the Main Analysis column. Use inverted colors (bg-[#0B192C] text-white) with gold (#C5A059) accents for high contrast. This gives users the final answer immediately.",
-    "progressive_disclosure": {
-      "pipeline_tabs": "Use Shadcn Tabs to separate the deliberation stages (Tab 1: Individual Analyses, Tab 2: Cross-Review, Tab 3: Synthesis). This solves the vertical scroll fatigue.",
-      "council_cards": "Inside Tab 1, display the 4 Council Member Cards in a 2x2 grid. Use Shadcn Accordions inside these cards to hide verbose text (arguments, laws) by default.",
-      "context_sidebar": "Sticky right sidebar. Top module is Judge Intelligence Panel. Below it, use a Shadcn Accordion to group 'Case Facts', 'Relevant Laws', and 'Similar Cases'. This compresses massive amounts of text into a scannable format."
-    }
+  "component_instructions": {
+    "Global_Background": "Replace `bg-[#F8F9FA]` with `bg-[#FAF9F6]` across AnalysisDashboard.jsx and other main wrapper divs to introduce color warmth.",
+    "Navbar": "Refine the glassmorphism in `Navbar.jsx`: use `bg-white/80 backdrop-blur-2xl border-slate-200/60 shadow-sm`. Update the active nav link to have a slightly bolder gold border and maybe a subtle text color shift.",
+    "AnalysisDashboard_Header": "In `AnalysisDashboard.jsx`, replace the flat `bg-[#0B192C]` with a rich gradient: `bg-gradient-to-br from-[#0A1428] via-[#0B192C] to-[#11233D] relative overflow-hidden`. Add an absolute positioned div (`bg-[#C5A059]/10 blur-[100px] w-96 h-96 rounded-full top-0 right-0 pointer-events-none`) to create a subtle warm inner glow. Ensure the content wrapper has `relative z-10`.",
+    "StageStepper": "Enhance the `StageStep` in `AnalysisDashboard.jsx`. Active state: `border-[#C5A059] bg-[#C5A059]/10 text-[#C5A059] shadow-[0_0_12px_rgba(197,160,89,0.3)]`. Complete state: `bg-emerald-500/15 border-emerald-500/50 text-emerald-400`. Inactive state: `border-white/10 text-white/30`. Update `StageConnector` similarly.",
+    "StatusBadges": "Soften the status badges in the header. Use `bg-[#C5A059]/10 border-[#C5A059]/20 text-[#C5A059]` instead of harsher opacities. Ensure the text is slightly bolder.",
+    "Tabs": "In `TabsList` and `TabsTrigger`, add a subtle background tint for the active tab (e.g., `data-[state=active]:bg-[#FAF9F6]`) and keep the gold border but make it more pronounced. Inactive tabs should be `text-slate-500 hover:text-slate-700`.",
+    "CouncilCards": "In `CouncilCard.jsx`, soften the border to `border-slate-200/60` and add a subtle ambient shadow `shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)]` or similar. The top colored accent bar can remain but consider `h-1.5` instead of `h-1` to make it a bit more deliberate.",
+    "ChiefJusticeCard": "In `ChiefJusticeCard.jsx`, replace `bg-[#0B192C]` with `bg-gradient-to-br from-[#0B192C] to-[#12223A] border border-[#C5A059]/20 shadow-[0_8px_32px_-8px_rgba(11,25,44,0.15)] relative overflow-hidden`. The synthesis text can be `text-slate-200` to be slightly warmer than plain white/gray."
   },
-  "components": {
-    "tabs": "Shadcn Tabs: Customize with transparent list background, sharp corners, and a gold bottom border (border-b-2 border-[#C5A059]) for the active state indicator.",
-    "accordion": "Shadcn Accordion: Use for Analyst details in cards and the right sidebar contextual panels.",
-    "cards": "Use raw HTML divs or Shadcn Card stripped of all shadows. Use border border-[#E2E8F0] bg-white.",
-    "progress_bar": "Segmented pipeline visual or steps component indicating current stage, placed below the case header.",
-    "badges": "Sharp badges (rounded-none), uppercase tracking-wider, for status labels."
-  },
-  "motion_and_interactions": {
-    "hover_states": "Interactive cards should have a subtle border color transition to gold on hover (hover:border-[#C5A059] transition-colors duration-300).",
-    "tab_transitions": "Content inside tabs should fade in cleanly without aggressive motion."
-  },
-  "testing": {
-    "attributes": "All interactive elements (Tabs, Accordion triggers, Buttons, Links) MUST include data-testid attributes (e.g., data-testid='tab-stage-1', data-testid='accordion-case-facts')."
-  },
-  "instructions_to_main_agent": [
-    "Install and setup required Shadcn components: tabs, accordion, card, badge.",
-    "Ensure fonts 'Playfair Display' and 'IBM Plex Sans' are imported correctly in CSS/HTML.",
-    "Refactor the monolithic scroll layout into a 2-column grid layout (Main Content Left, Context Sidebar Right).",
-    "Implement Shadcn Tabs to split the 4 stages of analysis into separate views. Tab 1 should show the 4 analyst cards in a grid.",
-    "Elevate the 'Chief Justice Final Verdict Card' to the top of the main column, styled as a high-contrast dark navy card.",
-    "Wrap 'Case Facts', 'Relevant Laws', and 'Similar Cases' inside a Shadcn Accordion in the right sidebar.",
-    "Strip all shadows and roundness from components. Enforce sharp edges (rounded-none or rounded-sm) and 1px borders.",
-    "Add 'data-testid' attributes to all interactive elements for testing."
-  ]
+  "media": {
+    "image_urls": {}
+  }
 }
