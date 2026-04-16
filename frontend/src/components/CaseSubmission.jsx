@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { AlertCircle, Scale, Award, FileText, Gavel, Calendar, User, Building2, BookOpen, Clock, CheckCircle, TrendingRight } from "lucide-react";
+import { AlertCircle, Scale, Award, FileText, Gavel, Calendar, User, Building2, BookOpen, Clock, CheckCircle, ArrowRight } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -420,7 +420,7 @@ export default function CaseSubmission() {
                     {caseData.next_hearing_date && (
                       <div className="flex gap-4 items-start">
                         <div className="w-8 h-8 rounded-full bg-green-600 border-4 border-white flex items-center justify-center z-10 shadow-md animate-pulse">
-                          <TrendingRight className="w-4 h-4 text-white" />
+                          <ArrowRight className="w-4 h-4 text-white" />
                         </div>
                         <div className="flex-1 pt-1">
                           <p className="text-xs font-bold text-green-600 tracking-wider uppercase">Next Hearing</p>
