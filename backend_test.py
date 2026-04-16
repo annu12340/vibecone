@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Any
 
 # Configuration
-BASE_URL = "https://ecourts-dashboard.preview.emergentagent.com/api"
+BASE_URL = "https://uniqueness-detector.preview.emergentagent.com/api"
 HEADERS = {"Content-Type": "application/json"}
 
 class TestResults:
