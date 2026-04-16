@@ -90,6 +90,12 @@ Build a legal system app for common users that:
 - [x] **Stage labels updated**: Stage 2 = "Cross-Review Deliberation" in progress bar
 - [x] **Chief Justice card**: renders `cross_review_impact` block after Final Verdict
 
+### Judge Profile Integration into Analysis Pipeline (Completed — June 2026)
+- [x] **`CaseSubmission.jsx`**: Judge field changed from free-text to dropdown populated from `/api/judges`. Shows dark "Profile Found" callout with grade badge, risk label, and 3 dimension grades when a judge with a DB profile is selected
+- [x] **`server.py`**: `run_council_analysis()` fetches judge profile by partial name match after Stage 2 and before Stage 3; stores concise `judge_profile_snapshot` (report card, bias score, temporal patterns, indicators) in analysis doc
+- [x] **`llm_council.py`**: `synthesize_chief_justice()` accepts `judge_profile` param; `build_judge_profile_text()` builds structured summary including report card, outlier score, temporal patterns, comparable cases; Chief Justice system message updated to mention it has judge profile; prompts for `judge_bias_warning` and `judge_temporal_risk` fields in output
+- [x] **`AnalysisDashboard.jsx`**: `JudgeIntelligencePanel` component in sidebar shows grade badge, bias score bar, report card dimension grades, key indicators, temporal risk callout (Monday/Post-lunch/Election), and green "given to Chief Justice" note when stage >= 3
+
 ## Prioritized Backlog
 
 ### P0 (Critical for core flow)
