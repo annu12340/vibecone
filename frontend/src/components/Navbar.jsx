@@ -32,17 +32,17 @@ export default function Navbar() {
   const navLinks = isCommonUser ? COMMON_USER_LINKS : AUTHORITY_LINKS;
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-slate-200/60 shadow-sm" data-testid="navbar">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm" data-testid="navbar">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group" data-testid="nav-logo">
-            <div className="w-8 h-8 bg-[#0B192C] flex items-center justify-center">
-              <Scale className="w-4 h-4 text-[#C5A059]" />
+          <Link to="/" className="flex items-center gap-3 group" data-testid="nav-logo">
+            <div className="w-10 h-10 bg-[#0B192C] flex items-center justify-center rounded-sm border border-[#C5A059]/20">
+              <Scale className="w-5 h-5 text-[#C5A059]" strokeWidth={1.5} />
             </div>
             <div>
-              <span className="font-playfair text-lg font-semibold text-slate-900 leading-none">LexAI</span>
-              <span className="block text-[10px] tracking-[0.15em] uppercase text-slate-500 font-ibmplex">Legal Intelligence</span>
+              <span className="font-serif text-xl font-bold text-[#0B192C] leading-none tracking-tight">LexAI</span>
+              <span className="block text-[10px] tracking-[0.2em] uppercase text-slate-500 font-sans font-medium">Legal Intelligence</span>
             </div>
           </Link>
 
@@ -54,13 +54,13 @@ export default function Navbar() {
                 key={to}
                 to={to}
                 data-testid={`nav-link-${label.toLowerCase().replace(/\s/g, "-")}`}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-ibmplex transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-sans font-medium transition-all rounded-md ${
                   isActive(to)
-                    ? "text-[#0B192C] font-semibold border-b-2 border-[#C5A059]"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50/80"
+                    ? "text-[#0B192C] bg-gray-100 font-semibold"
+                    : "text-slate-600 hover:text-[#0B192C] hover:bg-gray-50"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
+                <Icon className="w-4 h-4" strokeWidth={1.5} />
                 {label}
               </Link>
             ))}
@@ -71,7 +71,7 @@ export default function Navbar() {
               <Link
                 to="/submit"
                 data-testid="nav-cta-button"
-                className="ml-3 px-4 py-2 bg-[#0B192C] text-white text-sm font-medium hover:bg-[#1E293B] transition-colors"
+                className="ml-4 px-6 py-2.5 bg-[#C5A059] text-white text-sm font-sans font-semibold hover:bg-[#b08d4b] transition-all rounded-md shadow-md shadow-[#C5A059]/20"
               >
                 New Analysis
               </Link>
@@ -80,18 +80,18 @@ export default function Navbar() {
             {/* Role Toggle - Subtle version on far right */}
             <button
               onClick={toggleRole}
-              className="ml-4 flex items-center gap-1.5 px-2 py-1 text-xs text-slate-400 hover:text-slate-600 transition-colors group"
+              className="ml-4 flex items-center gap-2 px-3 py-1.5 text-xs font-sans text-slate-400 hover:text-slate-600 transition-colors group border border-slate-200 rounded-md hover:border-slate-300"
               title={`Switch to ${isCommonUser ? 'Authority' : 'Common User'}`}
             >
               {isCommonUser ? (
                 <>
-                  <Users2 className="w-3 h-3" />
-                  <span className="opacity-60 group-hover:opacity-100">User</span>
+                  <Users2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  <span className="font-medium">User</span>
                 </>
               ) : (
                 <>
-                  <Building2 className="w-3 h-3" />
-                  <span className="opacity-60 group-hover:opacity-100">Authority</span>
+                  <Building2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  <span className="font-medium">Authority</span>
                 </>
               )}
             </button>

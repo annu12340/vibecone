@@ -33,30 +33,30 @@ function ProsecutionContent({ a }) {
   if (!a) return null;
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-700 leading-relaxed">{a.summary}</p>
+      <p className="text-sm text-gray-300 leading-relaxed font-sans">{a.summary}</p>
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs text-slate-500 uppercase tracking-wider">Win Probability</span>
-          <span className="text-sm font-semibold text-slate-900">{a.win_probability || 50}%</span>
+          <span className="text-xs text-gray-400 uppercase tracking-wider font-sans">Win Probability</span>
+          <span className="text-sm font-semibold text-white font-sans">{a.win_probability || 50}%</span>
         </div>
-        <div className="h-2 bg-slate-100 rounded-sm overflow-hidden">
-          <div className="h-full bg-[#991B1B] rounded-sm transition-all duration-700" style={{ width: `${a.win_probability || 50}%` }} />
+        <div className="h-2 bg-white/10 rounded-sm overflow-hidden">
+          <div className="h-full bg-[#C5A059] rounded-sm transition-all duration-700" style={{ width: `${a.win_probability || 50}%` }} />
         </div>
       </div>
       {a.key_arguments?.length > 0 && (
         <div>
-          <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Key Arguments</p>
+          <p className="text-xs uppercase tracking-wider text-[#C5A059] mb-2 font-sans">Key Arguments</p>
           <ul className="space-y-1.5">
             {a.key_arguments.slice(0, 3).map((arg, i) => (
-              <li key={i} className="text-xs text-slate-600 flex gap-2 leading-relaxed">
-                <span className="text-[#991B1B] mt-0.5 shrink-0">›</span>{arg}
+              <li key={i} className="text-xs text-gray-300 flex gap-2 leading-relaxed font-sans">
+                <span className="text-[#C5A059] mt-0.5 shrink-0">›</span>{arg}
               </li>
             ))}
           </ul>
         </div>
       )}
       {a.key_legal_principle && (
-        <p className="text-xs italic text-slate-500 border-l-2 border-[#991B1B] pl-3 py-1">"{a.key_legal_principle}"</p>
+        <p className="text-xs italic text-gray-400 border-l-2 border-[#C5A059] pl-3 py-1 font-sans">"{a.key_legal_principle}"</p>
       )}
     </div>
   );
@@ -173,44 +173,47 @@ export function CouncilCard({ memberId, memberData }) {
 
   return (
     <div
-      className={`bg-white border overflow-hidden transition-all duration-500 hover:border-[#C5A059]/40 shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)] ${isAnalyzing ? "council-analyzing" : "border-slate-200/60"}`}
+      className={`bg-[#0B192C] border border-[#C5A059]/30 rounded-lg overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ${isAnalyzing ? "council-analyzing" : ""}`}
       data-testid={`council-card-${memberId}`}
     >
-      <div className="h-1.5" style={{ backgroundColor: config.color }} />
-
-      <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex items-start justify-between">
-        <div>
-          <p className="text-xs tracking-[0.15em] uppercase font-semibold text-slate-400">{config.title}</p>
-          <h3 className="font-playfair text-lg text-slate-900 mt-0.5">{config.name}</h3>
+      <div className="flex items-center justify-between p-5 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center border border-[#C5A059]/20">
+            <div className="w-5 h-5 rounded-sm" style={{ backgroundColor: config.color }} />
+          </div>
+          <div>
+            <p className="text-xs tracking-[0.2em] uppercase font-sans font-semibold text-[#C5A059]">{config.title}</p>
+            <h3 className="font-serif text-lg font-bold text-white mt-0.5 tracking-tight">{config.name}</h3>
+          </div>
         </div>
         <StatusBadge status={status} />
       </div>
 
-      <div className="p-5 min-h-[180px]">
+      <div className="p-5 min-h-[200px]">
         {status === "pending" && (
-          <div className="flex flex-col items-center justify-center h-36 text-slate-400">
-            <Clock className="w-6 h-6 mb-2 opacity-40" />
-            <p className="text-xs">Awaiting assignment...</p>
+          <div className="flex flex-col items-center justify-center h-36 text-gray-400">
+            <Clock className="w-6 h-6 mb-2 opacity-40" strokeWidth={1.5} />
+            <p className="text-xs font-sans">Awaiting assignment...</p>
           </div>
         )}
         {status === "analyzing" && (
           <div className="flex flex-col items-center justify-center h-36">
             <div className="flex gap-1.5 mb-3">
-              <div className="w-2 h-2 rounded-full bg-slate-400 dot-1" />
-              <div className="w-2 h-2 rounded-full bg-slate-400 dot-2" />
-              <div className="w-2 h-2 rounded-full bg-slate-400 dot-3" />
+              <div className="w-2 h-2 rounded-full bg-[#C5A059] dot-1" />
+              <div className="w-2 h-2 rounded-full bg-[#C5A059] dot-2" />
+              <div className="w-2 h-2 rounded-full bg-[#C5A059] dot-3" />
             </div>
-            <p className="text-xs text-slate-500">Analyzing case...</p>
+            <p className="text-xs text-gray-400 font-sans">Analyzing case...</p>
           </div>
         )}
         {status === "complete" && ContentComponent && (
-          <div className="animate-fade-in-up">
+          <div className="animate-fade-in-up text-white">
             <ContentComponent a={analysis} />
           </div>
         )}
         {status === "failed" && (
-          <div className="flex items-center gap-2 text-red-600 text-xs">
-            <AlertCircle className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-red-400 text-xs font-sans">
+            <AlertCircle className="w-4 h-4" strokeWidth={1.5} />
             <span>Analysis failed. Please retry.</span>
           </div>
         )}

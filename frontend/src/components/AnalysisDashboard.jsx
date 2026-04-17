@@ -262,11 +262,13 @@ export default function AnalysisDashboard() {
                 </TabsTrigger>
               </TabsList>
 
-              {/* Tab 1: Individual Analyses */}
+              {/* Tab 1: Individual Analyses - Bento Grid Layout */}
               <TabsContent value="analysis" className="mt-6" data-testid="tab-content-analysis">
-                <div className="grid sm:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 auto-rows-fr">
                   {MEMBER_ORDER.map((id) => (
-                    <CouncilCard key={id} memberId={id} memberData={members[id]} />
+                    <div key={id} className={id === 'bias_detector' ? 'md:col-span-2' : ''}>
+                      <CouncilCard memberId={id} memberData={members[id]} bentoLayout={id === 'bias_detector'} />
+                    </div>
                   ))}
                 </div>
               </TabsContent>
