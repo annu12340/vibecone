@@ -274,16 +274,51 @@ CASE_1_ANALYSIS = {
         },
     },
     "similar_cases": [
-        {"title": "State of Punjab v. Baldev Singh", "citation": "(1999) 6 SCC 172", "relevance": "Landmark Constitution Bench on Section 50 NDPS"},
-        {"title": "Arif Khan v. State of Uttarakhand", "citation": "(2018) 18 SCC 380", "relevance": "Written memorandum requirement under Section 50"},
-        {"title": "Noor Aga v. State of Punjab", "citation": "(2008) 16 SCC 417", "relevance": "Reverse onus requires foundational-fact proof"},
+        {
+            "case_name": "State of Punjab v. Baldev Singh",
+            "court": "Supreme Court of India (Constitution Bench)",
+            "year": "1999",
+            "outcome": "Landmark 5-judge bench ruling that strict compliance with Section 50 NDPS is mandatory. Breach of procedure renders recovery unsafe and inadmissible. Sets foundational standard for all NDPS prosecutions."
+        },
+        {
+            "case_name": "Arif Khan v. State of Uttarakhand",
+            "court": "Supreme Court of India",
+            "year": "2018",
+            "outcome": "Clarified that written memorandum of Section 50 rights is indispensable. Accused must be informed in writing of right to be searched before Magistrate/Gazetted Officer. Oral intimation insufficient."
+        },
+        {
+            "case_name": "Noor Aga v. State of Punjab",
+            "court": "Supreme Court of India",
+            "year": "2008",
+            "outcome": "Reverse onus under Section 35 NDPS operates only after prosecution establishes foundational facts beyond reasonable doubt. If recovery itself is doubtful, presumption cannot be invoked."
+        },
     ],
     "relevant_laws": [
-        "NDPS Act, 1985 — Section 8(c)",
-        "NDPS Act, 1985 — Section 20(b)(ii)(A)",
-        "NDPS Act, 1985 — Section 50 (procedural safeguard)",
-        "NDPS Act, 1985 — Section 37 (bail)",
-        "CrPC, 1973 — Section 438 (anticipatory bail)",
+        {
+            "code": "NDPS Act § 8(c)",
+            "title": "Prohibition on possession of narcotic drugs",
+            "relevance": "Primary offense charged - Prohibits production, manufacture, possession, sale, purchase of any narcotic drug. Cannabis (charas) covered under this provision."
+        },
+        {
+            "code": "NDPS Act § 20(b)(ii)(A)",
+            "title": "Punishment for small quantity cannabis",
+            "relevance": "Small quantity (up to 1 kg cannabis/100g charas) - Rigorous imprisonment up to 1 year OR fine up to Rs. 10,000 OR both. 9 grams recovered falls in small quantity."
+        },
+        {
+            "code": "NDPS Act § 50",
+            "title": "Mandatory procedural safeguard for search",
+            "relevance": "Critical protection - Right to be searched before Magistrate/Gazetted Officer must be offered in writing. Non-compliance renders recovery suspect. Defense's primary ground."
+        },
+        {
+            "code": "NDPS Act § 37",
+            "title": "Bail restrictions (not applicable here)",
+            "relevance": "Twin conditions for bail apply only to commercial quantity and higher. Small quantity cases exempt - bail governed by normal CrPC standards, making anticipatory bail likely."
+        },
+        {
+            "code": "CrPC § 438",
+            "title": "Direction for anticipatory bail",
+            "relevance": "Enables pre-arrest bail when person apprehends arrest. Court can impose conditions (surrender passport, reporting to IO, no witness tampering) while granting protection."
+        },
     ],
     "judge_profile_snapshot": {
         "judge_name": "Hon. Justice Revati Mohite Dere",
@@ -566,20 +601,72 @@ CASE_2_ANALYSIS = {
         },
     },
     "similar_cases": [
-        {"title": "Rupali Devi v. State of UP", "citation": "(2019) 5 SCC 384", "relevance": "Territorial jurisdiction at complainant's residence after expulsion"},
-        {"title": "Kahkashan Kausar v. State of Bihar", "citation": "(2022) 6 SCC 599", "relevance": "Specific vs. omnibus allegations against relatives"},
-        {"title": "Arnesh Kumar v. State of Bihar", "citation": "(2014) 8 SCC 273", "relevance": "No automatic arrest in 498A — CrPC 41A procedure"},
-        {"title": "Rajesh Sharma v. State of UP", "citation": "(2018) 10 SCC 472", "relevance": "Misuse safeguards (subsequently modified by Social Action Forum, 2018)"},
+        {
+            "case_name": "Rupali Devi v. State of UP",
+            "court": "Supreme Court of India",
+            "year": "2019",
+            "outcome": "Territorial jurisdiction established at complainant's residence after expulsion from matrimonial home. Critical precedent for 498A cases where wife is forced to return to parental home."
+        },
+        {
+            "case_name": "Kahkashan Kausar v. State of Bihar",
+            "court": "Supreme Court of India",
+            "year": "2022",
+            "outcome": "Distinguished between specific allegations with evidence vs. omnibus/generalized allegations against relatives. Partial quashing permitted for relatives without specific role attribution."
+        },
+        {
+            "case_name": "Arnesh Kumar v. State of Bihar",
+            "court": "Supreme Court of India",
+            "year": "2014",
+            "outcome": "No automatic arrest in 498A cases. Police must follow CrPC Section 41A procedure and assess necessity of arrest. Landmark judgment protecting accused from arbitrary arrest."
+        },
+        {
+            "case_name": "Rajesh Sharma v. State of UP",
+            "court": "Supreme Court of India",
+            "year": "2018",
+            "outcome": "Introduced safeguards against misuse of Section 498A including FIR scrutiny and Family Welfare Committee involvement. Subsequently modified by Social Action Forum (2018)."
+        },
     ],
     "relevant_laws": [
-        "IPC Section 498A (Cruelty)",
-        "IPC Section 323 (Voluntarily causing hurt)",
-        "Dowry Prohibition Act 1961 — Section 3 (giving/taking dowry)",
-        "Dowry Prohibition Act 1961 — Section 4 (demanding dowry)",
-        "Protection of Women from Domestic Violence Act, 2005 — Sections 18-22",
-        "CrPC Section 125 (Maintenance of wife)",
-        "CrPC Section 482 (Quashing of proceedings)",
-        "Indian Evidence Act Section 65B (Digital evidence admissibility)",
+        {
+            "code": "IPC § 498A",
+            "title": "Husband or relative subjecting woman to cruelty",
+            "relevance": "Primary charge - Non-bailable offense with imprisonment up to 3 years and fine. Covers physical and mental cruelty by husband or his relatives."
+        },
+        {
+            "code": "IPC § 323",
+            "title": "Voluntarily causing hurt",
+            "relevance": "Physical assault charge - Imprisonment up to 1 year or fine up to Rs. 1,000 or both. Supports the cruelty allegations with specific physical harm."
+        },
+        {
+            "code": "Dowry Prohibition Act § 3",
+            "title": "Penalty for giving or taking dowry",
+            "relevance": "Serious offense with minimum 5 years imprisonment and fine of Rs. 15,000 or dowry amount (whichever higher). Applies to both giving and receiving parties."
+        },
+        {
+            "code": "Dowry Prohibition Act § 4",
+            "title": "Penalty for demanding dowry",
+            "relevance": "Direct or indirect demand for dowry - 6 months to 2 years imprisonment and fine up to Rs. 10,000. Backed by WhatsApp evidence in this case."
+        },
+        {
+            "code": "DV Act 2005 §§ 18-22",
+            "title": "Protection, residence, monetary relief orders",
+            "relevance": "Provides immediate civil remedies independent of criminal prosecution - protection orders, right to reside in shared household, maintenance, compensation."
+        },
+        {
+            "code": "CrPC § 125",
+            "title": "Order for maintenance of wife, children and parents",
+            "relevance": "Monthly maintenance can be claimed by wife unable to maintain herself. Pendente lite relief available during criminal trial proceedings."
+        },
+        {
+            "code": "CrPC § 482",
+            "title": "Inherent powers to quash proceedings",
+            "relevance": "High Court's power to prevent abuse of process. Defense using this to seek quashing but unlikely to succeed given documentary evidence."
+        },
+        {
+            "code": "Evidence Act § 65B",
+            "title": "Admissibility of electronic records",
+            "relevance": "Critical for WhatsApp evidence - requires certificate under Section 65B(4) for admissibility. Prosecution must obtain certified copies of digital evidence."
+        },
     ],
     "judge_profile_snapshot": {
         "judge_name": "Hon. Justice Saurabh Shyam Shamshery",

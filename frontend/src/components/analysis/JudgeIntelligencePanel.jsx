@@ -106,26 +106,7 @@ export function JudgeIntelligencePanel({ judgeSnapshot, stage }) {
           </div>
         )}
 
-        {/* Temporal Risk */}
-        {(tp.monday_effect || tp.lunch_effect) && (
-          <div>
-            <p className="text-xs uppercase tracking-wider text-red-500 font-bold mb-2">Temporal Risk</p>
-            <div className="space-y-1.5">
-              {tp.monday_effect && (
-                <div className="bg-red-50 border border-red-100 px-2.5 py-2 text-xs">
-                  <span className="font-bold text-red-700">Monday Effect: </span>
-                  <span className="text-red-600">{tp.monday_effect}</span>
-                </div>
-              )}
-              {tp.lunch_effect && (
-                <div className="bg-orange-50 border border-orange-100 px-2.5 py-2 text-xs">
-                  <span className="font-bold text-orange-700">Post-Lunch: </span>
-                  <span className="text-orange-600">{tp.lunch_effect}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+
 
         {/* Used in synthesis */}
         {stage >= 3 && (

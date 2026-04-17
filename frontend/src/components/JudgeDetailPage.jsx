@@ -549,86 +549,8 @@ function TemporalSection({ tp }) {
   const maxDow = Math.max(...dowData.map((d) => d.conviction_rate), 1);
 
   return (
-    <div className="space-y-4">
-      <SectionTitle>Temporal Patterns</SectionTitle>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white border border-slate-200 p-4 rounded-sm">
-          <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">Monday Effect</p>
-          <p className="font-playfair text-xl text-[#0B192C] font-bold">{tp.monday_effect}</p>
-          <p className="text-xs text-slate-500 mt-1">vs. weekly avg conviction rate</p>
-        </div>
-        <div className="bg-white border border-slate-200 p-4 rounded-sm">
-          <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">Lunch Effect</p>
-          <p className="font-playfair text-xl text-[#0B192C] font-bold">{tp.lunch_effect}</p>
-          <p className="text-xs text-slate-500 mt-1">bail denial rate change post-lunch</p>
-        </div>
-      </div>
-
-      {dowData.length > 0 && (
-        <div className="bg-white border border-slate-200 p-5 rounded-sm">
-          <p className="text-xs uppercase tracking-wider text-slate-400 mb-4">Conviction Rate by Day of Week</p>
-          <ResponsiveContainer width="100%" height={150}>
-            <BarChart data={dowData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-              <YAxis domain={[Math.max(0, Math.min(...dowData.map((d) => d.conviction_rate)) - 8), Math.min(100, maxDow + 8)]} tick={{ fontSize: 11 }} unit="%" />
-              <Tooltip formatter={(v) => [`${v}%`]} />
-              <Bar dataKey="conviction_rate" radius={[3, 3, 0, 0]}>
-                {dowData.map((entry, i) => (
-                  <Cell key={`dow-${i}`} fill={entry.conviction_rate === maxDow ? "#0B192C" : "#94A3B8"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {todData.length > 0 && (
-        <div className="bg-white border border-slate-200 p-5 rounded-sm">
-          <p className="text-xs uppercase tracking-wider text-slate-400 mb-4">Bail Denial Rate by Time of Day</p>
-          <div className="space-y-3">
-            {todData.map((slot, i) => {
-              const maxRate = Math.max(...todData.map((s) => s.bail_denial_rate));
-              const isMax = slot.bail_denial_rate === maxRate;
-              return (
-                <div key={`tod-${i}`} className="flex items-center gap-3">
-                  <span className="text-xs text-slate-500 w-24 shrink-0">{slot.slot}</span>
-                  <div className="flex-1 h-7 bg-slate-100 relative overflow-hidden rounded-sm">
-                    <div className="h-full transition-all" style={{ width: `${slot.bail_denial_rate}%`, backgroundColor: isMax ? "#991B1B" : "#0B192C", opacity: isMax ? 1 : 0.45 }} />
-                    <span className="absolute inset-0 flex items-center pl-2 text-xs font-bold text-white mix-blend-difference">{slot.label}</span>
-                  </div>
-                  <span className={`text-xs font-bold w-8 text-right ${isMax ? "text-red-700" : "text-slate-600"}`}>{slot.bail_denial_rate}%</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      <div className="grid md:grid-cols-2 gap-4">
-        {ee && (
-          <div className="bg-white border border-slate-200 p-5 rounded-sm">
-            <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">Election Year Effect</p>
-            <div className="flex items-end gap-5 mb-3">
-              <div className="text-center"><p className="font-playfair text-3xl text-[#0B192C] font-bold">{ee.election_year_conviction_rate}%</p><p className="text-xs text-slate-500">Election Year</p></div>
-              <div className="text-center"><p className="font-playfair text-2xl text-slate-400">{ee.normal_year_rate}%</p><p className="text-xs text-slate-500">Normal Year</p></div>
-              <div className="text-center"><p className="font-playfair text-2xl font-bold" style={{ color: parseFloat(ee.difference) > 3 ? "#991B1B" : "#166534" }}>{ee.difference}</p><p className="text-xs text-slate-500">Difference</p></div>
-            </div>
-            <p className="text-xs text-slate-600 bg-slate-50 border border-slate-100 p-2 italic rounded-sm">{ee.assessment}</p>
-          </div>
-        )}
-        {me && (
-          <div className="bg-white border border-slate-200 p-5 rounded-sm">
-            <p className="text-xs uppercase tracking-wider text-slate-400 mb-3">High-Profile / Media Effect</p>
-            <div className="flex items-end gap-5 mb-3">
-              <div className="text-center"><p className="font-playfair text-3xl text-[#0B192C] font-bold">{me.high_profile_rate}%</p><p className="text-xs text-slate-500">High-Profile</p></div>
-              <div className="text-center"><p className="font-playfair text-2xl text-slate-400">{me.routine_rate}%</p><p className="text-xs text-slate-500">Routine</p></div>
-              <div className="text-center"><p className="font-playfair text-2xl font-bold" style={{ color: parseFloat(me.difference) > 5 ? "#991B1B" : "#166534" }}>{me.difference}</p><p className="text-xs text-slate-500">Difference</p></div>
-            </div>
-            <p className="text-xs text-slate-600 bg-slate-50 border border-slate-100 p-2 italic rounded-sm">{me.assessment}</p>
-          </div>
-        )}
-      </div>
+    <div >
+      
     </div>
   );
 }
