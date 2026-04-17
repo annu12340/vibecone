@@ -1385,6 +1385,7 @@ async def run_council_analysis(case_id: str, case_data: dict):
 # --- Startup: Seed if empty ---
 @app.on_event("startup")
 async def startup_event():
+    # Seed judges & laws (existing behaviour)
     try:
         count = await db.judges.count_documents({})
         if count == 0:
@@ -1397,7 +1398,31 @@ async def startup_event():
                 await db.laws.insert_many(laws)
             logger.info(f"Auto-seeded {len(judges)} judges and {len(laws)} laws")
     except Exception as e:
-        logger.error(f"Startup seeding failed: {e}")
+        logger.error(f"Startup seeding (judges/laws) failed: {e}")
+
+    # Seed 2 pre-analyzed cases for /history page demo
+    try:
+        from seed_cases import get_seed_cases, get_seed_analyses, SEED_CASE_IDS
+        # Idempotent: only insert seeds that don't already exist (by id)
+        existing_case_ids = {
+            c["id"] async for c in db.cases.find({"id": {"$in": SEED_CASE_IDS}}, {"id": 1})
+        }
+        cases_to_insert = [c for c in get_seed_cases() if c["id"] not in existing_case_ids]
+        if cases_to_insert:
+            await db.cases.insert_many(cases_to_insert)
+            logger.info(f"Auto-seeded {len(cases_to_insert)} pre-analyzed case(s) for /history")
+
+        existing_analysis_case_ids = {
+            a["case_id"] async for a in db.analyses.find(
+                {"case_id": {"$in": SEED_CASE_IDS}}, {"case_id": 1}
+            )
+        }
+        analyses_to_insert = [a for a in get_seed_analyses() if a["case_id"] not in existing_analysis_case_ids]
+        if analyses_to_insert:
+            await db.analyses.insert_many(analyses_to_insert)
+            logger.info(f"Auto-seeded {len(analyses_to_insert)} pre-analyzed analysis record(s)")
+    except Exception as e:
+        logger.error(f"Startup seeding (cases) failed: {e}")
 
 
 app.include_router(api_router)
