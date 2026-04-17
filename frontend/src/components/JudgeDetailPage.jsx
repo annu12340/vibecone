@@ -521,21 +521,7 @@ function TimelineSection({ timeline }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <div className="bg-white border border-slate-200 rounded-sm divide-y divide-slate-100">
-        {[...timeline].reverse().map((t, i) => (
-          <div key={`tl-${i}`} className="px-4 py-3 flex items-start gap-4">
-            <span className="font-playfair text-xl font-bold text-[#C5A059] w-14 shrink-0">{t.year}</span>
-            <div className="flex-1 min-w-0">
-              {t.notable && <p className="text-sm text-slate-800 mb-1">{t.notable}</p>}
-              <div className="flex flex-wrap gap-3 text-xs text-slate-400">
-                <span>Conviction: <strong className="text-slate-700">{t.conviction_rate}%</strong></span>
-                <span>Bail Denial: <strong className="text-slate-700">{t.bail_denial_rate}%</strong></span>
-                <span>Avg Sentence: <strong className="text-slate-700">{t.avg_sentence_months} mo</strong></span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+     
     </div>
   );
 }
