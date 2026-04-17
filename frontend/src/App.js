@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar";
 import RoleGuard from "./components/RoleGuard";
 import LandingPage from "./components/LandingPage";
 import CaseSubmission from "./components/CaseSubmission";
+import CaseDetails from "./components/CaseDetails";
 import AnalysisDashboard from "./components/AnalysisDashboard";
 import JudgeProfiles from "./components/JudgeProfiles";
 import JudgeDetailPage from "./components/JudgeDetailPage";
@@ -29,6 +30,11 @@ function App() {
             <Route path="/submit" element={
               <RoleGuard requiredRole="commonUser">
                 <CaseSubmission />
+              </RoleGuard>
+            } />
+            <Route path="/case-details/:cnr" element={
+              <RoleGuard requiredRole="commonUser">
+                <CaseDetails />
               </RoleGuard>
             } />
             <Route path="/analysis/:caseId" element={
