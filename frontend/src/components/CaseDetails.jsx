@@ -80,13 +80,14 @@ export default function CaseDetails() {
     mocked: !!location.state?.mocked,
     message: location.state?.message || null,
   };
+  const stateVoiceNarrative = location.state?.voiceNarrative || "";
 
   const [caseData, setCaseData] = useState(stateData);
   const [meta, setMeta] = useState(stateMeta);
   const [loading, setLoading] = useState(!stateData);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [voiceNarrative, setVoiceNarrative] = useState("");
+  const [voiceNarrative, setVoiceNarrative] = useState(stateVoiceNarrative);
   const [rawOpen, setRawOpen] = useState(false);
 
   // Refetch if page was opened directly (no location.state, e.g. refresh)
@@ -284,11 +285,6 @@ export default function CaseDetails() {
                 data-testid="case-source-badge"
               >
                 Source: {meta.source.replace("_", " ")}
-              </span>
-            )}
-            {meta.mocked && (
-              <span className="text-[11px] tracking-[0.18em] uppercase font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/40 px-3 py-1 rounded-sm">
-                Mocked Data
               </span>
             )}
             {caseData.case_status && (

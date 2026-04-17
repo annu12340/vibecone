@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { AlertCircle, Scale, FileText } from "lucide-react";
+import { AlertCircle, Scale, FileText, CheckCircle } from "lucide-react";
+import VoiceNarrator from "./sarvam/VoiceNarrator";
 
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -12,6 +13,7 @@ export default function CaseSubmission() {
   const [cnr, setCnr] = useState("");
   const [cnrLoading, setCnrLoading] = useState(false);
   const [cnrError, setCnrError] = useState(null);
+  const [voiceNarrative, setVoiceNarrative] = useState("");
 
   const fetchCaseFromIndianKanoon = async () => {
     if (!cnr.trim()) {
@@ -32,14 +34,15 @@ export default function CaseSubmission() {
         return;
       }
 
-      // Navigate to the Case Details page with the fetched data
+      // Navigate to the Case Details page with the fetched data (including voice narrative)
       navigate(`/case-details/${cnr.trim()}`, {
         state: {
           caseData: data.data,
           source: data.source,
           fallback_attempted: data.fallback_attempted,
           mocked: data.mocked,
-          message: data.message
+          message: data.message,
+          voiceNarrative: voiceNarrative
         }
       });
     } catch (err) {
@@ -119,6 +122,26 @@ export default function CaseSubmission() {
                 <p className="font-semibold text-sm">Error</p>
                 <p className="text-sm mt-1">{cnrError}</p>
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Voice Narrator (Sarvam AI STT) */}
+        <div className="mb-8">
+          <VoiceNarrator onTranscript={(text) => setVoiceNarrative(text)} />
+          {voiceNarrative && (
+            <div className="mt-2 flex items-center justify-between text-xs text-slate-600 bg-white border border-slate-200 rounded-sm px-3 py-2">
+              <span className="flex items-center gap-2">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                Voice narrative ready — will be included when you fetch and analyze the case
+              </span>
+              <button
+                type="button"
+                onClick={() => setVoiceNarrative("")}
+                className="text-red-600 hover:underline"
+              >
+                Remove
+              </button>
             </div>
           )}
         </div>
