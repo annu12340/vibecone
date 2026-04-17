@@ -1,10 +1,21 @@
 """
 Pre-analyzed case seed data for populating /history page.
-Inserts 2 complete cases + their full 3-stage Council analyses into MongoDB
-on startup if the `cases` collection is empty.
+
+IMPORTANT SCHEMA NOTES (match frontend exactly — see
+`frontend/src/components/analysis/CouncilCard.jsx` and `CrossReviewSection.jsx`):
+
+  members.prosecution.analysis  →  summary, win_probability, key_arguments[], key_legal_principle
+  members.defense.analysis      →  summary, acquittal_probability, constitutional_issues[], key_legal_principle
+  members.legal_scholar.analysis→  summary, applicable_laws[{code,title}], legal_standard
+  members.bias_detector.analysis→  summary, bias_score (0-100), unconscious_bias_indicators[]
+
+  cross_reviews.<id>.analysis   →  cross_review_summary, challenges[], agreements[], key_insight
+
+  chief_justice.synthesis       →  executive_summary, final_verdict, key_insights[],
+                                   outcome_assessment{most_likely_outcome,prosecution_wins_probability,defense_wins_probability},
+                                   cross_review_impact, recommendations_for_user[{action,priority}], overall_bias_risk
 """
 from datetime import datetime, timezone, timedelta
-import uuid
 
 
 def _iso(days_ago: int = 0) -> str:
@@ -12,7 +23,7 @@ def _iso(days_ago: int = 0) -> str:
 
 
 # =============================================================
-# CASE 1 — NDPS / Drug Offense (Defense-favouring verdict)
+# CASE 1 — NDPS / Drug Offense (Defense-favouring verdict 70/30)
 # =============================================================
 CASE_1_ID = "a17c1f6e-1d4b-4a2e-9e01-111111111111"
 
@@ -64,97 +75,82 @@ CASE_1_ANALYSIS = {
         "prosecution": {
             "status": "complete",
             "analysis": {
-                "strength_of_case": "moderate",
-                "key_evidence": [
-                    "9g charas recovered as per panchnama dated 14.07.2024",
-                    "Chemical Analyser's report confirms recovered substance is cannabis resin",
-                    "Independent panch witnesses (Mr. R. Kadam, Mr. S. Kamble) present at scene",
+                "summary": (
+                    "Prosecution's case rests on a 9g charas recovery memo dated 14.07.2024, "
+                    "a CA report confirming cannabis resin, and two panch witnesses. While 'small quantity' "
+                    "classification means Section 37 NDPS bar on bail does not apply, conviction at trial remains "
+                    "a serious prospect given the documentary recovery chain. Strategic focus shifts to trial-stage."
+                ),
+                "win_probability": 30,
+                "key_arguments": [
+                    "Recovery of 9g charas duly memorialised in Panchnama signed by two independent witnesses (Mr. R. Kadam & Mr. S. Kamble)",
+                    "Chemical Analyser's report (FSL-BKC/2024/3287) confirms recovered substance is cannabis resin matching NDPS schedule",
+                    "Reverse onus under Section 35 NDPS — once foundational fact of recovery is established, burden shifts to accused",
+                    "Petitioner was found in immediate possession at a public place (Ghatkopar Station) — no plausible innocent explanation offered",
                 ],
-                "applicable_sections": [
-                    "Section 8(c) NDPS Act (prohibition)",
-                    "Section 20(b)(ii)(A) NDPS Act (small quantity — up to 1 yr imprisonment or fine up to Rs. 10,000)",
-                ],
-                "conviction_probability": 35,
-                "aggravating_factors": [
-                    "Possession of contraband in public place",
-                    "Student demographic — concern about supply to peer group",
-                ],
-                "bail_position": "Prosecution does not object to bail on merit (small quantity — Section 37 NDPS bar does not apply), but insists on strict conditions",
-                "strategic_recommendation": "Concede bail with tight reporting conditions; focus on trial conviction",
+                "key_legal_principle": "Once recovery is proved through the panchnama and CA report, the statutory reverse onus under Section 35 NDPS operates, and the accused must disprove conscious possession.",
             },
         },
         "defense": {
             "status": "complete",
             "analysis": {
-                "strength_of_case": "strong",
-                "constitutional_defenses": [
-                    "Article 21 — Right to personal liberty (Gurbaksh Singh Sibbia v. State of Punjab, (1980) 2 SCC 565)",
-                    "Article 20(3) — Protection against self-incrimination",
-                    "Article 14 — Equal protection (against stock-witness police practices)",
+                "summary": (
+                    "Defense is exceptionally strong on procedural grounds. The mandatory Section 50 NDPS safeguard — "
+                    "written intimation of the right to be searched before a Magistrate or Gazetted Officer — appears "
+                    "to have been violated. This, read with the stock-witness pattern of the named panchas and the "
+                    "time-stamp discrepancy in the memorandum vis-à-vis the radio log, places the recovery itself in doubt. "
+                    "Bail is near-certain; trial-stage acquittal highly likely if the Section 50 argument is executed precisely."
+                ),
+                "acquittal_probability": 70,
+                "constitutional_issues": [
+                    "Article 21 — Right to personal liberty under fair procedure (Gurbaksh Singh Sibbia v. State of Punjab, (1980) 2 SCC 565)",
+                    "Article 20(3) — Protection against self-incrimination (Toofan Singh v. State of Tamil Nadu, (2021) 4 SCC 1)",
+                    "Article 14 — Equal protection of law violated by use of stock-witness panchas with 14 prior NDPS cases",
+                    "Due process violation under Section 50 NDPS — no written memorandum of right to gazetted-officer search produced at arrest",
                 ],
-                "key_precedents": [
-                    "State of Punjab v. Baldev Singh, (1999) 6 SCC 172 — mandatory Section 50 compliance",
-                    "Arif Khan v. State of Uttarakhand, (2018) 18 SCC 380 — procedural non-compliance vitiates recovery",
-                    "Toofan Singh v. State of Tamil Nadu, (2021) 4 SCC 1 — Section 67 NDPS confessions inadmissible",
-                ],
-                "procedural_violations": [
-                    "Section 50 NDPS intimation of right to gazetted-officer search allegedly NOT in writing",
-                    "Independent panchas suspected to be stock witnesses with 14 prior NDPS cases",
-                    "Videography of search/seizure absent despite Home Ministry SOP 2018",
-                ],
-                "acquittal_probability": 65,
-                "bail_strength": "Very strong — small quantity + no antecedents + student + Section 50 violation argument",
-                "strategic_recommendation": "File anticipatory bail pressing Baldev Singh + Arif Khan; parallel quash petition under Section 482 CrPC if Section 50 violation confirmed",
+                "key_legal_principle": "Procedure is the handmaid of justice in NDPS matters. Where Section 50 is violated, the recovery itself becomes suspect and cannot form the sole basis of conviction (State of Punjab v. Baldev Singh, (1999) 6 SCC 172).",
             },
         },
         "legal_scholar": {
             "status": "complete",
             "analysis": {
-                "doctrinal_framing": "This case sits at the intersection of NDPS strict-liability doctrine and constitutional due-process protections recognized progressively since Baldev Singh (1999).",
-                "scholarly_precedents": [
-                    {
-                        "case": "State of Punjab v. Baldev Singh, (1999) 6 SCC 172",
-                        "ratio": "Non-compliance with Section 50 NDPS renders recovery unsafe for conviction; evidence must be scrutinized with caution.",
-                    },
-                    {
-                        "case": "Noor Aga v. State of Punjab, (2008) 16 SCC 417",
-                        "ratio": "Reverse burden under Section 35 NDPS constitutionally valid only when foundational facts of recovery established beyond reasonable doubt.",
-                    },
-                    {
-                        "case": "Arif Khan v. State of Uttarakhand, (2018) 18 SCC 380",
-                        "ratio": "Failure to offer choice of search before Magistrate/Gazetted Officer IN WRITING is fatal.",
-                    },
-                ],
-                "academic_commentary": (
-                    "Prof. Upendra Baxi has noted that NDPS jurisprudence oscillates between 'War on Drugs' rhetoric "
-                    "and constitutional safeguards. Post-Arif Khan, the pendulum has swung decisively toward procedural rigour, "
-                    "particularly for small-quantity cases involving first-time offenders from educational backgrounds."
+                "summary": (
+                    "NDPS jurisprudence has moved decisively toward procedural rigour post-Arif Khan (2018) and "
+                    "Toofan Singh (2021). For small-quantity cases involving first-time offenders from educational "
+                    "backgrounds, courts have consistently favoured liberty when Section 50 compliance is doubtful. "
+                    "The prosecution's reverse-onus argument under Section 35 fails if foundational recovery facts "
+                    "are not established beyond reasonable doubt (Noor Aga, 2008). This petitioner's profile and "
+                    "the available procedural-irregularity arguments place the case firmly in the bail-and-acquittal zone."
                 ),
-                "key_legal_principle": "Procedure is the handmaid of justice in NDPS matters. Where Section 50 is violated, the recovery itself becomes suspect and cannot form the sole basis of conviction.",
-                "probable_outcome": "High likelihood of bail. At trial, acquittal probable if Section 50 non-compliance is established.",
+                "applicable_laws": [
+                    {"code": "NDPS Act § 8(c)", "title": "Prohibition on production, manufacture, possession of narcotic drugs"},
+                    {"code": "NDPS Act § 20(b)(ii)(A)", "title": "Punishment for small quantity of cannabis — up to 1 yr imprisonment or fine up to Rs. 10,000"},
+                    {"code": "NDPS Act § 50", "title": "Mandatory procedural safeguard — right to be searched before Magistrate/Gazetted Officer"},
+                    {"code": "NDPS Act § 37", "title": "Bail restrictions — do not apply to small-quantity offences"},
+                    {"code": "CrPC § 438", "title": "Power to grant anticipatory bail"},
+                    {"code": "Evidence Act § 65B", "title": "Admissibility of electronic records — relevant for radio log"},
+                ],
+                "legal_standard": "State of Punjab v. Baldev Singh, (1999) 6 SCC 172 (Constitution Bench) — strict compliance with Section 50 NDPS is mandatory; breach renders recovery unsafe. Reinforced by Arif Khan v. State of Uttarakhand, (2018) 18 SCC 380 (written memorandum indispensable) and Noor Aga v. State of Punjab, (2008) 16 SCC 417 (reverse onus only after foundational facts proved).",
             },
         },
         "bias_detector": {
             "status": "complete",
             "analysis": {
-                "demographic_bias_risk": "low-moderate",
-                "judge_profile_note": (
-                    "Hon. Justice Revati Mohite Dere (Bombay High Court) has a strong track record of granting "
-                    "bail in NDPS small-quantity cases and has repeatedly emphasized procedural compliance "
-                    "(see her judgment in ABA/2145/2022 quashing recovery for Section 50 violation)."
+                "summary": (
+                    "Bias risk in this case is LOW. Hon. Justice Revati Mohite Dere has a documented track record "
+                    "of granting bail in small-quantity NDPS matters and prioritising procedural compliance (cf. "
+                    "ABA/2145/2022). The petitioner's demographic profile — urban upper-caste student — does not "
+                    "indicate individual bias vulnerability. However, systemic concerns about stock-witness panchas "
+                    "(present in ~68% of Mumbai NDPS cases per 2022 RTI data) reflect institutional rather than "
+                    "judicial bias and actually strengthen the defense narrative."
                 ),
-                "systemic_patterns": [
-                    "Young male defendants in public-place NDPS cases face higher initial detention rates — see NLU Delhi 2022 study",
-                    "Stock-witness panchas are statistically present in 68% of Mumbai NDPS cases per RTI data",
-                    "Students from urban middle-class backgrounds have 23% better bail outcomes than rural first-time defendants",
+                "bias_score": 18,
+                "unconscious_bias_indicators": [
+                    "Young male defendant in public-place NDPS cases face 34% higher initial remand rates than older accused (NLU Delhi 2022)",
+                    "Stock-witness panchas are structurally present in 68% of Mumbai NDPS cases per RTI 2022 — reduces prosecution credibility for this bench",
+                    "Students from urban middle-class backgrounds historically see 23% better bail outcomes than rural first-time defendants — defendant benefits from this institutional pattern",
+                    "'Public place' drug recovery narratives are statistically over-represented in cases where Section 50 non-compliance is later established",
                 ],
-                "caste_religion_factor": "Defendant's demographic profile (upper-caste Maharashtrian urban student) does not indicate bias risk; however, the disparity noted above for rural defendants is itself a systemic concern.",
-                "recommended_safeguards": [
-                    "File independent affidavits from reliable neighbourhood character witnesses",
-                    "Request court to call police daily-diary entry to verify informant credibility",
-                    "Press for videography compliance — trial court can adversely infer from its absence",
-                ],
-                "bias_risk_score": 22,
             },
         },
     },
@@ -162,35 +158,78 @@ CASE_1_ANALYSIS = {
         "prosecution": {
             "status": "complete",
             "analysis": {
-                "rebuttal_to_defense": "Defense's reliance on Arif Khan is misplaced — in that case, NO written memorandum existed at all. Here, the arresting officer did prepare a memorandum; its form may be challenged but non-existence is not established.",
-                "rebuttal_to_scholar": "Prof. Baxi's academic view cannot override the binding statutory reverse-onus under Section 35 NDPS. Once recovery is proved, onus shifts.",
-                "position_shift": "Soften earlier position — concede bail on merit, focus entirely on trial-stage conviction.",
-                "revised_conviction_probability": 30,
+                "cross_review_summary": (
+                    "After reviewing defense and scholar inputs, the prosecution must concede the bail question on merit "
+                    "given small-quantity classification and absence of Section 37 bar. Conviction focus remains, but the "
+                    "memorandum's evidentiary value is weaker than initially assessed when time-stamp inconsistency is factored in."
+                ),
+                "challenges": [
+                    "Defense's reliance on Arif Khan is factually distinguishable — in that case NO memorandum existed at all; here one exists, though its form may be challengeable",
+                    "Stock-witness pattern raised by Bias Detector is an institutional critique, not an individualized evidentiary defect — courts have rejected generic stock-witness challenges absent specific proof",
+                    "Scholar's invocation of Noor Aga presumes foundational-fact failure; prosecution still contends foundational facts are prima facie established on the record",
+                ],
+                "agreements": [
+                    "Conceded — Section 37 NDPS bar does not apply; bail must be granted on merit with appropriate conditions",
+                    "Conceded — radio-log RTI if obtained and showing time-stamp discrepancy would materially weaken the recovery chain",
+                ],
+                "key_insight": "The prosecution's best path is trial-focused: concede bail early, preserve evidentiary credibility, and prepare witnesses for robust cross-examination on Section 50 compliance.",
             },
         },
         "defense": {
             "status": "complete",
             "analysis": {
-                "rebuttal_to_prosecution": "The memorandum relied upon is a post-facto preparation — time-stamps on the document are inconsistent with the radio log of the police vehicle. We have applied under RTI for the radio log; if discrepancy is proved, Arif Khan applies with full force.",
-                "rebuttal_to_bias_detector": "Agreed on Justice Dere's pro-procedural track record, but we should not over-rely — we need the Section 50 argument airtight regardless of the bench.",
-                "position_shift": "Hardened — acquittal probability revised upward.",
-                "revised_acquittal_probability": 70,
+                "cross_review_summary": (
+                    "Cross-review hardened the defense position. The prosecution's own concession that bail should be granted, "
+                    "combined with the scholar's Noor Aga citation, establishes that foundational-fact failure (via Section 50 breach) "
+                    "is a winning strategy at trial. Defense revises acquittal probability upward to 70% contingent on the RTI radio-log returns."
+                ),
+                "challenges": [
+                    "Prosecution's claim that the memorandum exists (even if defective) is technically correct — Arif Khan's 'total absence' framing is too strong; we must argue 'fatal defect' under Baldev Singh standard",
+                    "Bias Detector's caution against over-relying on Justice Dere's personal inclination is well-taken; the objective Section 50 argument must stand independently of bench sympathy",
+                ],
+                "agreements": [
+                    "Agreed with Scholar — Baldev Singh (Constitution Bench) + Noor Aga combination is the primary anchor; Arif Khan is supporting",
+                    "Agreed with Bias Detector — file independent character affidavits from VJTI Director and hostel warden to dilute any demographic-bias concerns",
+                ],
+                "key_insight": "The radio-log RTI is the knockout punch — if time-stamps don't match, we move from 'argued Section 50 breach' to 'documented prosecution fabrication'. Pursue this aggressively.",
             },
         },
         "legal_scholar": {
             "status": "complete",
             "analysis": {
-                "rebuttal_to_prosecution": "The statutory reverse-onus under Section 35 presumes foundational facts. Where Section 50 is violated, the foundational fact (lawful recovery) is not established — Noor Aga squarely applies.",
-                "consensus_building": "Cross-council consensus: bail will be granted. At trial, conviction hinges on whether Section 50 compliance can be established through oral testimony beyond the disputed memorandum.",
-                "position_shift": "Affirmed earlier position with stronger Noor Aga citation.",
+                "cross_review_summary": (
+                    "Scholar's position is reinforced by the cross-review dynamic. Prosecution conceded bail; defense sharpened its "
+                    "Section 50 strategy. The single remaining doctrinal question is whether the memorandum's admitted existence "
+                    "(but defective form) satisfies Baldev Singh's mandatory-compliance test. The scholarly consensus, drawing on "
+                    "Arif Khan and the post-2018 line of cases, is that form failure = substance failure for Section 50 purposes."
+                ),
+                "challenges": [
+                    "Defense's 70% acquittal estimate presumes the RTI returns favourably — scholar cautions that the estimate should be conditional, not absolute",
+                    "Prosecution's distinction of Arif Khan (existence vs. defect) is doctrinally weak but rhetorically appealing — defense must preemptively neutralise it at the bail hearing itself",
+                ],
+                "agreements": [
+                    "Full agreement with Bias Detector — systemic stock-witness data should be cited as contextual material, not as the sole basis for rejecting the recovery",
+                ],
+                "key_insight": "The governing doctrine is: Baldev Singh mandates strict compliance → Arif Khan clarifies compliance requires a written memorandum → Noor Aga makes foundational-fact failure fatal to the reverse-onus presumption. Apply in that sequence.",
             },
         },
         "bias_detector": {
             "status": "complete",
             "analysis": {
-                "rebuttal_to_defense": "Do not rest entire case on Justice Dere's personal inclination — benches rotate. The objective procedural argument must stand on its own.",
-                "observation": "Cross-review reveals rare consensus among all four members that bail is highly likely. This convergence itself reduces bias risk.",
-                "revised_bias_risk_score": 18,
+                "cross_review_summary": (
+                    "Bias risk revised slightly downward to 16/100 after cross-review consensus. The rare four-way convergence that "
+                    "bail is highly likely itself reduces individualised bias risk — the outcome is driven by merit-facing analysis, "
+                    "not by judicial idiosyncrasy. Systemic (institutional) bias remains documented but operates favourably here."
+                ),
+                "challenges": [
+                    "Defense continues to lean slightly on Justice Dere's personal track record — while statistically supported, this is not litigation-robust; reconstruct the argument on pure procedural grounds",
+                    "Prosecution's implicit reliance on the 'public-place student drug peddler' narrative has embedded class/moral assumptions that a skilled defense counsel should surface and rebut",
+                ],
+                "agreements": [
+                    "Agreed with Scholar — the procedural argument is sufficiently strong to prevail regardless of bench composition",
+                    "Agreed with Defense — independent character evidence from VJTI authorities will neutralise any narrative-bias risk",
+                ],
+                "key_insight": "When all four council members converge on an outcome through procedural reasoning (not demographic or identity factors), bias risk is intrinsically low regardless of the individual judge.",
             },
         },
     },
@@ -198,36 +237,36 @@ CASE_1_ANALYSIS = {
         "status": "complete",
         "synthesis": {
             "executive_summary": (
-                "After two rounds of deliberation, this Council reaches a strong consensus: anticipatory bail is highly likely "
-                "to be granted given the 'small quantity' classification, absence of prior record, and the prima facie Section 50 "
-                "non-compliance argument supported by Arif Khan v. State of Uttarakhand. The real battle will be at trial, where "
-                "the petitioner's acquittal prospects depend on establishing procedural violation beyond the disputed memorandum."
+                "After two rounds of deliberation, this Council reaches a strong consensus: anticipatory bail is virtually certain "
+                "given the 'small quantity' classification, absence of prior record, and the prima facie Section 50 non-compliance "
+                "supported by Arif Khan v. State of Uttarakhand. The real battle lies at trial, where the petitioner's acquittal "
+                "prospects (65–70%) depend on establishing procedural violation beyond the disputed memorandum — the RTI radio-log "
+                "being the single most decisive lever."
             ),
             "outcome_assessment": {
-                "most_likely_outcome": "Anticipatory bail granted with conditions (surrender of passport, weekly reporting to IO, no tampering with evidence). Acquittal probable at trial (65–70%) if Section 50 violation is substantiated.",
+                "most_likely_outcome": "Anticipatory bail granted with conditions (surrender of passport, weekly reporting to IO, no tampering with evidence). Acquittal probable at trial (65–70%) if Section 50 violation is substantiated through the RTI radio-log.",
                 "prosecution_wins_probability": 30,
                 "defense_wins_probability": 70,
             },
             "key_insights": [
                 "Section 50 NDPS compliance is the decisive legal question — everything else is secondary.",
-                "Stock-witness pattern documented by RTI data significantly weakens prosecution credibility.",
-                "The radio-log discrepancy, if established through RTI, is a knockout argument under Arif Khan.",
+                "Stock-witness pattern documented by RTI data significantly weakens prosecution credibility at trial.",
+                "The radio-log discrepancy, if established through RTI, is a knockout argument under Arif Khan and Baldev Singh.",
+                "Rare four-way council consensus materially reduces individualised bias risk — outcome is merit-driven.",
             ],
-            "council_consensus": "All four council members agree bail will be granted. Legal Scholar and Defense converge on Noor Aga + Arif Khan as the winning combination at trial.",
-            "key_disagreements": "Prosecution contends the memorandum's existence is sufficient; Defense and Scholar insist its form is fatally defective. This is the single sharpest clash.",
-            "cross_review_impact": "Prosecution softened its position on bail during cross-review. Defense hardened acquittal probability from 65% to 70% after the radio-log RTI insight emerged.",
+            "cross_review_impact": (
+                "Prosecution softened its position on bail during cross-review, conceding Section 37 NDPS bar is inapplicable. "
+                "Defense hardened acquittal probability from 65% to 70% after the radio-log RTI insight emerged. "
+                "Legal Scholar reinforced Baldev Singh → Arif Khan → Noor Aga as the doctrinal sequence. "
+                "Bias Detector revised risk downward to 16/100 citing procedural (not demographic) convergence."
+            ),
             "recommendations_for_user": [
                 {"action": "File anticipatory bail application immediately at Sessions Court citing Baldev Singh + Arif Khan", "priority": "high", "reason": "Any delay risks custodial interrogation"},
                 {"action": "Pursue RTI for Ghatkopar P.S. radio log of 14.07.2024 between 15:00-18:00 hrs", "priority": "high", "reason": "Time-stamp discrepancy is the strongest trial-stage argument"},
-                {"action": "Obtain character certificates from VJTI Director and hostel warden", "priority": "medium", "reason": "Strengthens 'no flight risk' argument"},
-                {"action": "File parallel Section 482 CrPC quash petition if Section 50 violation confirmed", "priority": "medium", "reason": "Avoids full trial"},
+                {"action": "Obtain character certificates from VJTI Director and hostel warden", "priority": "medium", "reason": "Strengthens 'no flight risk' and neutralises demographic-narrative risks"},
+                {"action": "File parallel Section 482 CrPC quash petition if Section 50 violation is documented", "priority": "medium", "reason": "Avoids full trial and secures clean record"},
             ],
             "overall_bias_risk": "low",
-            "immediate_next_steps": [
-                "Engage senior counsel with NDPS experience for bail hearing",
-                "File RTI with Mumbai Police for radio log and station diary entries",
-                "Collect character certificates and academic records for court",
-            ],
             "final_verdict": (
                 "The petitioner's liberty is well protected by established constitutional doctrine — "
                 "bail is virtually certain, and acquittal is probable if the defense executes the Section 50 strategy precisely."
@@ -235,9 +274,9 @@ CASE_1_ANALYSIS = {
         },
     },
     "similar_cases": [
-        {"title": "State of Punjab v. Baldev Singh", "citation": "(1999) 6 SCC 172", "relevance": "Landmark on Section 50 NDPS"},
-        {"title": "Arif Khan v. State of Uttarakhand", "citation": "(2018) 18 SCC 380", "relevance": "Written memorandum requirement"},
-        {"title": "Noor Aga v. State of Punjab", "citation": "(2008) 16 SCC 417", "relevance": "Reverse onus foundational facts"},
+        {"title": "State of Punjab v. Baldev Singh", "citation": "(1999) 6 SCC 172", "relevance": "Landmark Constitution Bench on Section 50 NDPS"},
+        {"title": "Arif Khan v. State of Uttarakhand", "citation": "(2018) 18 SCC 380", "relevance": "Written memorandum requirement under Section 50"},
+        {"title": "Noor Aga v. State of Punjab", "citation": "(2008) 16 SCC 417", "relevance": "Reverse onus requires foundational-fact proof"},
     ],
     "relevant_laws": [
         "NDPS Act, 1985 — Section 8(c)",
@@ -259,7 +298,7 @@ CASE_1_ANALYSIS = {
 
 
 # =============================================================
-# CASE 2 — Section 498A IPC / Dowry (Prosecution-favouring verdict)
+# CASE 2 — Section 498A IPC / Dowry (Prosecution-favouring verdict 72/28)
 # =============================================================
 CASE_2_ID = "b28d2e7f-2e5c-4b3f-af12-222222222222"
 
@@ -269,12 +308,11 @@ CASE_2 = {
     "description": (
         "Complainant Smt. Kavita Sharma (aged 29) has lodged FIR No. 178/2024 at Mahila Thana, Lucknow, against her "
         "husband (Respondent No. 1), mother-in-law (Respondent No. 2), and brother-in-law (Respondent No. 3) under "
-        "Section 498A IPC (cruelty by husband & relatives) and Sections 3 & 4 of the Dowry Prohibition Act, 1961. "
-        "Allegations include: (i) sustained physical and mental cruelty over 4 years of marriage; (ii) repeated "
-        "demands of Rs. 15 lakhs and a Honda City car in dowry; (iii) forced expulsion from matrimonial home on "
-        "10.03.2024 while pregnant; (iv) denial of medical care; (v) threats on WhatsApp (screenshots preserved). "
-        "Medical certificate from KGMU Lucknow documents bruising consistent with blunt-force trauma. "
-        "Matter is before the Family Court, Lucknow, alongside the Section 125 CrPC maintenance application. "
+        "Section 498A IPC and Sections 3 & 4 of the Dowry Prohibition Act, 1961. Allegations include sustained physical "
+        "and mental cruelty over 4 years of marriage; repeated demands of Rs. 15 lakhs and a Honda City car in dowry; "
+        "forced expulsion from matrimonial home on 10.03.2024 while pregnant; denial of medical care; threats on WhatsApp "
+        "(28 hash-verified messages). Medical certificate from KGMU Lucknow documents bruising consistent with blunt-force "
+        "trauma. Matter is before the Family Court, Lucknow, alongside a Section 125 CrPC maintenance application. "
         "Defense has filed a Crl. M.C. before Allahabad High Court under Section 482 CrPC seeking quashing, relying on Arnesh Kumar."
     ),
     "case_type": "Domestic Violence",
@@ -311,94 +349,90 @@ CASE_2_ANALYSIS = {
         "prosecution": {
             "status": "complete",
             "analysis": {
-                "strength_of_case": "strong",
-                "key_evidence": [
-                    "KGMU medical certificate dated 11.03.2024 documenting bruising",
-                    "28 WhatsApp messages threatening dowry escalation (chat-history preserved, hash-verified)",
-                    "Bank transfers of Rs. 3.5 lakhs from complainant's father to respondent No. 1 (2020-2023)",
-                    "Statement of complainant's mother corroborating sustained harassment",
-                    "Call-detail records showing abusive calls on day of expulsion",
+                "summary": (
+                    "Prosecution's case is unusually strong for a 498A matter, placing it well above the NCRB national "
+                    "conviction average of 18%. Documentary evidence is threefold: (i) KGMU medical certificate documenting "
+                    "bruising; (ii) 28 WhatsApp messages containing dowry threats, hash-verified and preserved; (iii) bank "
+                    "transfers of Rs. 3.5 lakhs from complainant's father to respondent No. 1 between 2020-2023. The fact of "
+                    "pregnancy at the time of expulsion triggers Rupali Devi (2019) jurisdictional and substantive advantages. "
+                    "Section 482 quashing petition is likely to fail against the husband but may succeed for omnibus allegations "
+                    "against the mother-in-law and brother-in-law under Kahkashan Kausar (2022)."
+                ),
+                "win_probability": 75,
+                "key_arguments": [
+                    "KGMU medical certificate dated 11.03.2024 documenting blunt-force bruising — contemporaneous, institutional, and admissible",
+                    "28 WhatsApp messages threatening dowry escalation, hash-verified under Section 65B Evidence Act",
+                    "Bank-transfer trail of Rs. 3.5 lakhs from complainant's father — establishes 'giving/taking' element under Section 3 Dowry Act",
+                    "Pregnancy at the time of expulsion triggers Rupali Devi v. State of UP, (2019) 5 SCC 384 — jurisdictional and substantive advantages",
+                    "Statement of complainant's mother corroborating sustained 4-year harassment pattern",
                 ],
-                "applicable_sections": [
-                    "IPC Section 498A (cruelty — up to 3 yrs + fine, non-bailable)",
-                    "Dowry Prohibition Act Section 3 (giving/taking — 5 yrs minimum)",
-                    "Dowry Prohibition Act Section 4 (demand — 6 months to 2 yrs)",
-                    "IPC Section 323 (voluntarily causing hurt)",
-                ],
-                "conviction_probability": 70,
-                "aggravating_factors": [
-                    "Pregnancy at time of expulsion — enhanced culpability per Rupali Devi (2019)",
-                    "Documentary evidence of dowry transfer",
-                    "Repeat pattern of demand over 4 years",
-                ],
-                "strategic_recommendation": "Oppose quashing aggressively citing Rupali Devi, document trail; press for interim maintenance under DV Act parallel proceedings.",
+                "key_legal_principle": "Where cruelty is evidenced by contemporaneous documentary records (medical, digital, financial) and aligns temporally with pregnancy and expulsion, Section 498A prosecution survives Arnesh Kumar and Section 482 quashing scrutiny as against the principal accused.",
             },
         },
         "defense": {
             "status": "complete",
             "analysis": {
-                "strength_of_case": "moderate",
-                "constitutional_defenses": [
-                    "Article 21 — Right to fair trial (Arnesh Kumar v. State of Bihar, (2014) 8 SCC 273 — no automatic arrest in 498A)",
-                    "Article 14 — Equal protection (Rajesh Sharma v. State of UP, (2018) 10 SCC 472 — safeguards against misuse)",
+                "summary": (
+                    "Defense faces an uphill battle against the husband, but has legitimate ground for quashing the "
+                    "proceedings against the mother-in-law and brother-in-law under Kahkashan Kausar (2022). The "
+                    "documentary evidence against the husband is difficult to overcome; the WhatsApp 'loan for home "
+                    "renovation' framing (12.08.2023) is the only realistic contested factual issue. Strategic pivot: "
+                    "drop blanket-quashing ambition, pursue partial quashing, and propose mediation under Rajesh Sharma "
+                    "(2018) safeguards. Arnesh Kumar applies to arrest, not to prosecution — conflating these doctrines is a tactical error."
+                ),
+                "acquittal_probability": 25,
+                "constitutional_issues": [
+                    "Article 21 — Right to fair trial and procedural safeguards under Arnesh Kumar v. State of Bihar, (2014) 8 SCC 273",
+                    "Article 14 — Equal protection (safeguards against misuse of Section 498A under Rajesh Sharma v. State of UP, (2018) 10 SCC 472, subsequently modified)",
+                    "Article 20 — Protection against double jeopardy if parallel DV Act and Section 125 CrPC applications overlap",
+                    "Section 482 CrPC — inherent jurisdiction of High Court to quash proceedings where continuation would be an abuse of process",
                 ],
-                "key_precedents": [
-                    "Arnesh Kumar v. State of Bihar, (2014) 8 SCC 273",
-                    "Rajesh Sharma v. State of UP, (2018) 10 SCC 472 (later modified)",
-                    "Social Action Forum for Manav Adhikar v. UOI, (2018) 10 SCC 443",
-                ],
-                "counter_arguments": [
-                    "Allegations against mother-in-law (aged 58) and brother-in-law may qualify as 'omnibus' — subject to scrutiny per Geeta Mehrotra v. State of UP (2012)",
-                    "Bank transfers alone do not prove coercive demand — could be voluntary familial gifts",
-                    "Medical certificate is 24 hours post-incident; no contemporaneous FIR",
-                ],
-                "acquittal_probability": 30,
-                "strategic_recommendation": "Seek quashing of proceedings against relatives (not husband) under Geeta Mehrotra; file counter-complaint for defamation; offer mediation per Rajesh Sharma safeguards.",
+                "key_legal_principle": "Courts must distinguish between specific allegations with documentary backing and generalized 'omnibus' allegations against relatives — the former survives Section 482 scrutiny, the latter must be quashed (Kahkashan Kausar v. State of Bihar, (2022) 6 SCC 599).",
             },
         },
         "legal_scholar": {
             "status": "complete",
             "analysis": {
-                "doctrinal_framing": (
-                    "Post-Rupali Devi (2019), the jurisprudence on 498A has re-centred on the wife's lived experience of cruelty, "
-                    "even at her parental home. Arnesh Kumar's procedural safeguard (CrPC 41A notice) does NOT bar prosecution — "
-                    "it only guards arrest. The defense's reliance on quashing is therefore tactically misdirected on the facts."
+                "summary": (
+                    "Post-Rupali Devi (2019), 498A jurisprudence has re-centred on the wife's lived experience of cruelty — "
+                    "including at her parental home after being driven out. Arnesh Kumar's CrPC 41A procedural safeguard guards "
+                    "arrest, not prosecution; defense's reliance on it for quashing is tactically misdirected on these facts. "
+                    "The 2022 Kahkashan Kausar ruling introduces a critical distinction between specific and generalised "
+                    "allegations — specific allegations against the husband survive; generalised allegations against the "
+                    "in-laws face serious quashing risk. The documentary trail here places the principal case in the "
+                    "'specific allegations' category with high survival prospects."
                 ),
-                "scholarly_precedents": [
-                    {"case": "Rupali Devi v. State of UP, (2019) 5 SCC 384", "ratio": "Territorial jurisdiction extends to the place where the wife resides after being driven out."},
-                    {"case": "U. Suvetha v. State, (2009) 6 SCC 757", "ratio": "Mere threats/insults without physical cruelty do not amount to 498A — but pattern matters."},
-                    {"case": "Kahkashan Kausar v. State of Bihar, (2022) 6 SCC 599", "ratio": "Courts must distinguish between generalized allegations and specific acts attributable to each relative."},
+                "applicable_laws": [
+                    {"code": "IPC § 498A", "title": "Husband or relative subjecting woman to cruelty — up to 3 yrs imprisonment and fine, non-bailable"},
+                    {"code": "IPC § 323", "title": "Punishment for voluntarily causing hurt — up to 1 yr imprisonment"},
+                    {"code": "Dowry Prohibition Act § 3", "title": "Penalty for giving or taking dowry — minimum 5 yrs imprisonment"},
+                    {"code": "Dowry Prohibition Act § 4", "title": "Penalty for demanding dowry — 6 months to 2 yrs imprisonment"},
+                    {"code": "DV Act 2005 §§ 18-22", "title": "Protection, residence, monetary, custody and compensation orders"},
+                    {"code": "CrPC § 125", "title": "Maintenance of wives, children and parents"},
+                    {"code": "Evidence Act § 65B", "title": "Certified admissibility of electronic records (WhatsApp)"},
                 ],
-                "academic_commentary": (
-                    "Prof. Flavia Agnes (Majlis Law) has argued that the pendulum post-Arnesh Kumar overcorrected against complainants. "
-                    "The 2022 Kahkashan Kausar ruling recalibrates — specific allegations survive; generalized ones do not. Here, "
-                    "specific allegations against husband are strong; allegations against mother-in-law need greater specificity."
-                ),
-                "key_legal_principle": "Specificity of allegation determines survival under 498A. Documentary trail (medical, WhatsApp, bank) places this case in the 'specific allegations' category against the husband.",
-                "probable_outcome": "Against husband: trial will proceed; conviction probable. Against mother-in-law/brother-in-law: likely to be discharged at Section 227/239 stage absent specific role attribution.",
+                "legal_standard": "Rupali Devi v. State of UP, (2019) 5 SCC 384 (territorial jurisdiction at wife's post-expulsion residence) + Kahkashan Kausar v. State of Bihar, (2022) 6 SCC 599 (specific vs. omnibus allegations) + Arnesh Kumar v. State of Bihar, (2014) 8 SCC 273 (CrPC 41A applies to arrest, not to continuation of prosecution).",
             },
         },
         "bias_detector": {
             "status": "complete",
             "analysis": {
-                "demographic_bias_risk": "moderate",
-                "judge_profile_note": (
-                    "Hon. Justice Saurabh Shyam Shamshery (Allahabad High Court) has a mixed track record on 498A — "
-                    "he has quashed approximately 40% of omnibus 498A FIRs under Arnesh Kumar reasoning but has consistently "
-                    "upheld cases with documentary evidence. Given the medical + WhatsApp + bank evidence here, quashing is unlikely."
+                "summary": (
+                    "Bias risk is MODERATE. Hon. Justice Saurabh Shyam Shamshery has a mixed 498A record — approximately 40% "
+                    "quashing rate on omnibus FIRs under Arnesh Kumar reasoning, but consistent survival of prosecutions backed "
+                    "by documentary evidence. Given the medical + WhatsApp + bank trail here, quashing against the husband is "
+                    "unlikely. The NCRB 2023 baseline (18% 498A conviction rate) is a systemic concern but is substantially "
+                    "outweighed by the case-specific evidentiary strength. No caste/religion-axis bias risk (both parties "
+                    "upper-caste Hindu). Slight economic asymmetry (retired-government-employee father vs salaried IT respondent) is not litigation-material."
                 ),
-                "systemic_patterns": [
-                    "NCRB 2023 data: 498A conviction rate is only 18% — but case at hand has above-average evidence strength",
-                    "UP family courts show significant gender-disparity in interim maintenance orders (pro-complainant 62%)",
-                    "Pregnant-at-expulsion cases see 2.3x higher conviction rate (Rupali Devi citation advantage)",
+                "bias_score": 30,
+                "unconscious_bias_indicators": [
+                    "UP family courts show significant pro-complainant pattern in interim maintenance orders (62% grant rate) — structural advantage for petitioner here",
+                    "Pregnant-at-expulsion cases see 2.3x higher conviction rate compared to post-expulsion 498A filings (Rupali Devi citation advantage)",
+                    "'Omnibus allegation' framing in UP High Court quashing decisions has risen 28% post-Kahkashan Kausar — slight structural risk for in-laws",
+                    "Defense's 'loan for home renovation' narrative around the Rs. 5 lakhs WhatsApp is a documented gendered reframing pattern that reduces complainant credibility in 31% of similar cases (NLU Delhi 2023)",
+                    "Middle-class IT-professional respondent profile is statistically correlated with 18% higher quashing-grant rate vs working-class respondents — slight risk factor",
                 ],
-                "caste_religion_factor": "Both parties upper-caste Hindu — no bias risk on these axes. Economic disparity slight (complainant's father retired government employee; respondent salaried IT) — not a significant factor.",
-                "recommended_safeguards": [
-                    "Seek separate legal representation — family court tends to conflate maintenance and criminal tracks",
-                    "Apply for protection under Section 19 DV Act for residence rights simultaneously",
-                    "Preserve digital evidence with Section 65B certificate BEFORE quashing hearing",
-                ],
-                "bias_risk_score": 35,
             },
         },
     },
@@ -406,35 +440,84 @@ CASE_2_ANALYSIS = {
         "prosecution": {
             "status": "complete",
             "analysis": {
-                "rebuttal_to_defense": "Arnesh Kumar is a procedural safeguard on arrest — it does not require quashing of proceedings. Defense is conflating two doctrines. Here, CrPC 41A notices were properly issued; no Arnesh Kumar violation.",
-                "rebuttal_to_scholar": "Agreed that Kahkashan Kausar restricts 'omnibus' allegations. However, specific allegations against mother-in-law (Rs. 5 lakhs demand via WhatsApp on 12.08.2023, preserved) meet the Kahkashan threshold.",
-                "position_shift": "Hardened — revised conviction probability upward against husband specifically.",
-                "revised_conviction_probability": 75,
+                "cross_review_summary": (
+                    "After reviewing defense's Kahkashan Kausar argument, prosecution concedes that the case against the "
+                    "mother-in-law may be quashed absent more specific role-attribution. However, for the 12.08.2023 "
+                    "WhatsApp Rs. 5 lakhs message, prosecution maintains it meets Kahkashan's specificity threshold. "
+                    "Revised focus: hardened prosecution against the husband (win probability up to 78%) and tactical "
+                    "acceptance of partial quashing for relatives."
+                ),
+                "challenges": [
+                    "Defense's 'loan for home renovation' interpretation of the 12.08.2023 WhatsApp is strained — context, timing, and surrounding messages establish dowry-demand character; court is unlikely to accept defense's alternative reading",
+                    "Arnesh Kumar invocation by defense conflates arrest procedure with prosecution viability — this is a legal error, not a merit point, and will not assist defense at the Section 482 hearing",
+                ],
+                "agreements": [
+                    "Conceded — specific-role documentation against the mother-in-law is weaker; partial quashing for her is a realistic outcome we can live with",
+                    "Agreed with Bias Detector — document Section 65B certificate immediately, as digital evidence is inadmissible without it",
+                ],
+                "key_insight": "The Section 482 quashing petition is defense's strongest tactical move but will succeed only partially — against the relatives. The main prosecution against the husband is insulated by the documentary trail.",
             },
         },
         "defense": {
             "status": "complete",
             "analysis": {
-                "rebuttal_to_prosecution": "The Rs. 5 lakhs WhatsApp message is ambiguous — 'loan for home renovation' was the specific framing; prosecution's interpretation as 'dowry demand' is strained.",
-                "rebuttal_to_scholar": "Conceded — quashing against mother-in-law/brother-in-law is the realistic ceiling; quashing against husband is not achievable on this record.",
-                "position_shift": "Revised strategy — stop pursuing blanket quashing; focus on partial quashing + mediation offer.",
-                "revised_acquittal_probability": 25,
+                "cross_review_summary": (
+                    "Cross-review forces a strategic reset. Scholar's Arnesh-vs-continuation distinction is doctrinally correct; "
+                    "blanket quashing is not achievable against the husband. Defense revises acquittal probability downward "
+                    "and shifts strategy to: (i) partial quashing for mother-in-law/brother-in-law under Kahkashan Kausar; "
+                    "(ii) mediation offer under Rajesh Sharma safeguards; (iii) defamation counter-complaint to shift narrative."
+                ),
+                "challenges": [
+                    "Scholar's Rupali Devi citation cuts both ways — while it expands jurisdiction, it also reinforces substantive 498A survival when cruelty is documented. Cannot be rebutted on these facts.",
+                    "Prosecution's Section 65B certified WhatsApp evidence is a genuine documentary weapon — our earlier strategy of contesting authenticity is untenable; shift to contesting interpretation instead",
+                    "Bias Detector's 40% quashing-rate framing for Justice Shamshery is for 'omnibus' FIRs specifically — our FIR has specific allegations against the husband and therefore does not enjoy that statistical tailwind",
+                ],
+                "agreements": [
+                    "Conceded to Scholar — Arnesh Kumar cannot be stretched to cover prosecution viability; stop pressing it as quashing ground for the husband",
+                    "Agreed with Bias Detector — partial-quashing strategy for in-laws is the realistic ceiling; conserve resources for that",
+                ],
+                "key_insight": "The realistic best-case is partial quashing + mediation offer. Pursuing blanket quashing would waste tactical capital and invite costs against the respondents — pivot immediately.",
             },
         },
         "legal_scholar": {
             "status": "complete",
             "analysis": {
-                "rebuttal_to_prosecution": "The 2.3x conviction advantage cited by Bias Detector is statistical — it cannot substitute individual assessment of each accused's specific role.",
-                "consensus_building": "Council converging: trial proceeds against husband; quashing possible against relatives absent specific documentary role.",
-                "position_shift": "Affirmed — added Kahkashan Kausar as binding restriction on omnibus allegations.",
+                "cross_review_summary": (
+                    "Cross-review produces healthy doctrinal convergence. Prosecution accepts Kahkashan's partial-quashing "
+                    "implication for in-laws; Defense accepts Arnesh Kumar's limited scope. The remaining factual dispute — "
+                    "whether the 12.08.2023 WhatsApp constitutes a dowry demand or a legitimate loan request — is a trial-stage "
+                    "determination, not a quashing-stage one. The Section 482 court will decline to undertake factual inquiry "
+                    "and the matter will proceed to trial on merits."
+                ),
+                "challenges": [
+                    "Defense's pivot to mediation is strategically sound but must not be confused with legal entitlement — mediation is voluntary and cannot be imposed over the complainant's objection",
+                    "Prosecution's confidence in 75% win probability should be tempered by NCRB baseline — 18% national conviction rate is a sobering reality check that evidence-handling at trial must be flawless",
+                ],
+                "agreements": [
+                    "Agreed with Bias Detector — the systemic patterns cited here are documentary context, not outcome-determinative; merit-based analysis governs",
+                    "Full agreement with Prosecution that pregnancy-at-expulsion fact activates Rupali Devi's most favorable jurisdictional interpretation",
+                ],
+                "key_insight": "Apply doctrine in sequence: (1) Rupali Devi establishes jurisdiction and substantive 498A survival; (2) Kahkashan Kausar distinguishes specific vs. omnibus; (3) Arnesh Kumar bears only on arrest procedure, not prosecution continuation.",
             },
         },
         "bias_detector": {
             "status": "complete",
             "analysis": {
-                "rebuttal_to_defense": "Defense's 'loan' framing of WhatsApp message is precisely the kind of gendered reframing that NCRB 2023 data shows reduces complainant credibility in UP family courts.",
-                "observation": "Despite moderate bias risk, strong documentary evidence insulates this case substantially.",
-                "revised_bias_risk_score": 30,
+                "cross_review_summary": (
+                    "Bias score revised slightly downward to 28/100 after cross-review consensus. The convergence that "
+                    "prosecution against the husband will survive while in-law case may be partially quashed reflects "
+                    "precisely the kind of nuanced, merit-calibrated reasoning that reduces bias concerns. Systemic risks "
+                    "remain (NCRB baseline, UP family-court patterns), but they operate as context rather than as outcome drivers."
+                ),
+                "challenges": [
+                    "Defense's narrative-reframing of Rs. 5 lakhs as 'loan' is the classic gendered-recharacterisation pattern documented in 31% of reviewed 498A defenses — court should be alert to this framing",
+                    "Prosecution's reliance on the 62% UP family-court maintenance pattern is a systemic-advantage argument — it should support but not replace individual evidentiary strength",
+                ],
+                "agreements": [
+                    "Agreed with Scholar — systemic patterns are context, not outcome determiners; the case is merit-strong on its own",
+                    "Agreed with Defense on one point — mediation option should remain open to avoid the 3–5 year criminal-trial timeline that harms both parties, if feasible",
+                ],
+                "key_insight": "Bias risk reduction in 498A cases correlates directly with evidentiary strength — where documentary evidence is robust, structural advantages and disadvantages largely cancel out.",
             },
         },
     },
@@ -442,14 +525,14 @@ CASE_2_ANALYSIS = {
         "status": "complete",
         "synthesis": {
             "executive_summary": (
-                "After two rounds of deliberation, the Council converges: the prosecution against the husband is highly likely to survive "
-                "the Section 482 quashing attempt and proceed to trial with a 70–75% conviction probability. However, quashing is probable "
-                "for the mother-in-law and brother-in-law absent more specific role-attribution under Kahkashan Kausar. The documentary "
-                "evidence — KGMU medical certificate, 28 hash-verified WhatsApp threats, Rs. 3.5L bank trail, and pregnancy-at-expulsion — "
-                "places this case above the NCRB average conviction threshold."
+                "After two rounds of deliberation, the Council converges: the prosecution against the husband is highly likely to "
+                "survive the Section 482 quashing attempt and proceed to trial with a 72–75% conviction probability. However, "
+                "partial quashing is probable for the mother-in-law and brother-in-law absent more specific role-attribution under "
+                "Kahkashan Kausar. The documentary evidence — KGMU medical certificate, 28 hash-verified WhatsApp threats, Rs. 3.5L "
+                "bank trail, and pregnancy-at-expulsion — places this case well above the NCRB 18% national 498A conviction average."
             ),
             "outcome_assessment": {
-                "most_likely_outcome": "Section 482 quashing dismissed against husband; partial quashing granted for in-laws. Trial proceeds on 498A, Section 3 & 4 Dowry Act, and Section 323 IPC against husband. Interim maintenance granted under Section 125 CrPC.",
+                "most_likely_outcome": "Section 482 quashing dismissed against husband; partial quashing granted for in-laws. Trial proceeds on 498A, Section 3 & 4 Dowry Act, and Section 323 IPC against husband. Interim maintenance granted under Section 125 CrPC. Parallel DV Act relief available immediately.",
                 "prosecution_wins_probability": 72,
                 "defense_wins_probability": 28,
             },
@@ -457,34 +540,36 @@ CASE_2_ANALYSIS = {
                 "Documentary evidence (medical + digital + financial) is the decisive factor outperforming the 18% national 498A conviction average.",
                 "Kahkashan Kausar (2022) doctrine favors partial, not blanket, quashing — a reality defense accepted only after cross-review.",
                 "The pregnancy-at-expulsion fact triggers Rupali Devi jurisdictional + substantive advantages simultaneously.",
+                "Arnesh Kumar guards arrest, not prosecution continuation — defense's tactical error in conflating the two was corrected during cross-review.",
             ],
-            "council_consensus": "Trial proceeds against husband on strong evidence. Relatives likely discharged at Section 227/239 stage. Mediation path under Rajesh Sharma safeguards remains open for parties willing to explore it.",
-            "key_disagreements": "Prosecution and Defense clashed sharpest on interpretation of the 12.08.2023 WhatsApp message ('loan' vs 'demand'). This single factual determination will swing the Section 498A outcome against the mother-in-law.",
-            "cross_review_impact": "Defense dropped blanket-quashing strategy during cross-review after Scholar's Kahkashan Kausar intervention. Prosecution hardened conviction estimate upward. The debate matured from 'whether to prosecute' to 'who to prosecute'.",
+            "cross_review_impact": (
+                "Defense dropped blanket-quashing strategy during cross-review after Scholar's Kahkashan Kausar intervention, "
+                "revising acquittal probability from 30% to 25%. Prosecution hardened conviction estimate from 70% to 75%. "
+                "Legal Scholar reinforced the Rupali Devi → Kahkashan Kausar → Arnesh Kumar doctrinal sequence. "
+                "Bias Detector revised risk downward to 28/100 citing merit-calibrated convergence. "
+                "The debate matured from 'whether to prosecute' to 'who to prosecute' — a significant doctrinal clarification."
+            ),
             "recommendations_for_user": [
-                {"action": "File reply-affidavit to Section 482 petition citing Rupali Devi and Kahkashan Kausar", "priority": "high", "reason": "Quashing hearing is imminent; delay could result in ex-parte order"},
-                {"action": "Obtain Section 65B Information Technology Act certificate for all WhatsApp evidence", "priority": "high", "reason": "Without 65B certificate, digital evidence is inadmissible at trial"},
-                {"action": "File parallel DV Act application for residence and protection orders", "priority": "high", "reason": "Provides immediate civil relief independent of criminal timeline"},
-                {"action": "Apply for interim maintenance of Rs. 35,000/month under Section 125 CrPC", "priority": "medium", "reason": "Unpaid since March 2024; arrears compound monthly"},
-                {"action": "Preserve KGMU medical record via certified copy", "priority": "medium", "reason": "Hospital records can be altered or lost"},
+                {"action": "File reply-affidavit to Section 482 petition citing Rupali Devi and Kahkashan Kausar before the listed date", "priority": "high", "reason": "Quashing hearing is imminent; delay could result in an ex-parte order"},
+                {"action": "Obtain Section 65B Information Technology Act certificate for all 28 WhatsApp messages", "priority": "high", "reason": "Without 65B certificate, digital evidence is inadmissible at trial — prosecution collapses"},
+                {"action": "File parallel DV Act application for protection, residence, and monetary orders at Lucknow Family Court", "priority": "high", "reason": "Provides immediate civil relief independent of the criminal timeline; does not prejudice criminal prosecution"},
+                {"action": "Apply for interim maintenance of Rs. 35,000/month under Section 125 CrPC", "priority": "medium", "reason": "Arrears accumulating since March 2024; compound monthly"},
+                {"action": "Obtain certified true copy of KGMU medical record and preserve original in sealed envelope", "priority": "medium", "reason": "Hospital records can be altered or lost; certified copy is litigation-robust"},
             ],
-            "overall_bias_risk": "moderate",
-            "immediate_next_steps": [
-                "Appear at Allahabad HC on next listed date with Section 65B-certified digital evidence",
-                "File DV Act application at Lucknow Family Court this week",
-                "Engage a senior advocate with 498A trial experience for the criminal court",
-            ],
+            "overall_bias_risk": "medium",
             "final_verdict": (
-                "The complainant's case against her husband is well-fortified by documentary evidence and precedent; the trial will proceed, and conviction is probable. "
-                "The Council advises strategic acceptance that the case against in-laws may not survive Kahkashan Kausar scrutiny, and to concentrate prosecutorial resources on the principal accused."
+                "The complainant's case against her husband is well-fortified by documentary evidence and precedent; "
+                "the trial will proceed, and conviction is probable. The Council advises strategic acceptance that "
+                "the case against in-laws may not survive Kahkashan Kausar scrutiny, and to concentrate prosecutorial "
+                "resources on the principal accused while pursuing parallel DV Act and maintenance reliefs aggressively."
             ),
         },
     },
     "similar_cases": [
-        {"title": "Rupali Devi v. State of UP", "citation": "(2019) 5 SCC 384", "relevance": "Territorial jurisdiction at complainant's residence"},
-        {"title": "Kahkashan Kausar v. State of Bihar", "citation": "(2022) 6 SCC 599", "relevance": "Specific vs omnibus allegations against relatives"},
+        {"title": "Rupali Devi v. State of UP", "citation": "(2019) 5 SCC 384", "relevance": "Territorial jurisdiction at complainant's residence after expulsion"},
+        {"title": "Kahkashan Kausar v. State of Bihar", "citation": "(2022) 6 SCC 599", "relevance": "Specific vs. omnibus allegations against relatives"},
         {"title": "Arnesh Kumar v. State of Bihar", "citation": "(2014) 8 SCC 273", "relevance": "No automatic arrest in 498A — CrPC 41A procedure"},
-        {"title": "Rajesh Sharma v. State of UP", "citation": "(2018) 10 SCC 472", "relevance": "Misuse safeguards (subsequently modified)"},
+        {"title": "Rajesh Sharma v. State of UP", "citation": "(2018) 10 SCC 472", "relevance": "Misuse safeguards (subsequently modified by Social Action Forum, 2018)"},
     ],
     "relevant_laws": [
         "IPC Section 498A (Cruelty)",
@@ -494,6 +579,7 @@ CASE_2_ANALYSIS = {
         "Protection of Women from Domestic Violence Act, 2005 — Sections 18-22",
         "CrPC Section 125 (Maintenance of wife)",
         "CrPC Section 482 (Quashing of proceedings)",
+        "Indian Evidence Act Section 65B (Digital evidence admissibility)",
     ],
     "judge_profile_snapshot": {
         "judge_name": "Hon. Justice Saurabh Shyam Shamshery",
