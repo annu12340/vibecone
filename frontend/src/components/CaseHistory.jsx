@@ -68,7 +68,7 @@ export default function CaseHistory() {
         );
         setAnalyses(statusMap);
       } catch (err) {
-        console.error("Failed to load cases", err);
+        console.error("Failed to load cases:", err);
       } finally {
         setLoading(false);
       }
