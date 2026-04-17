@@ -8,6 +8,8 @@ module.exports = {
   theme: {
 	extend: {
 		fontFamily: {
+			'serif': ['"Cormorant Garamond"', 'Georgia', 'serif'],
+			'sans': ['"IBM Plex Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
 			'playfair': ['"Playfair Display"', 'Georgia', 'serif'],
 			'ibmplex': ['"IBM Plex Sans"', '-apple-system', 'sans-serif'],
 		},
