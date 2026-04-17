@@ -33,22 +33,22 @@ function ProsecutionContent({ a }) {
   if (!a) return null;
   return (
     <div className="space-y-4">
-      <p className="text-sm text-gray-300 leading-relaxed font-sans">{a.summary}</p>
+      <p className="text-sm text-slate-700 leading-relaxed font-sans">{a.summary}</p>
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs text-gray-400 uppercase tracking-wider font-sans">Win Probability</span>
-          <span className="text-sm font-semibold text-white font-sans">{a.win_probability || 50}%</span>
+          <span className="text-xs text-slate-500 uppercase tracking-wider font-sans">Win Probability</span>
+          <span className="text-sm font-semibold text-slate-900 font-sans">{a.win_probability || 50}%</span>
         </div>
-        <div className="h-2 bg-white/10 rounded-sm overflow-hidden">
+        <div className="h-2 bg-slate-100 rounded-sm overflow-hidden">
           <div className="h-full bg-[#C5A059] rounded-sm transition-all duration-700" style={{ width: `${a.win_probability || 50}%` }} />
         </div>
       </div>
       {a.key_arguments?.length > 0 && (
         <div>
-          <p className="text-xs uppercase tracking-wider text-[#C5A059] mb-2 font-sans">Key Arguments</p>
+          <p className="text-xs uppercase tracking-wider text-[#C5A059] mb-2 font-sans font-semibold">Key Arguments</p>
           <ul className="space-y-1.5">
             {a.key_arguments.slice(0, 3).map((arg, i) => (
-              <li key={i} className="text-xs text-gray-300 flex gap-2 leading-relaxed font-sans">
+              <li key={i} className="text-xs text-slate-700 flex gap-2 leading-relaxed font-sans">
                 <span className="text-[#C5A059] mt-0.5 shrink-0">›</span>{arg}
               </li>
             ))}
@@ -56,7 +56,7 @@ function ProsecutionContent({ a }) {
         </div>
       )}
       {a.key_legal_principle && (
-        <p className="text-xs italic text-gray-400 border-l-2 border-[#C5A059] pl-3 py-1 font-sans">"{a.key_legal_principle}"</p>
+        <p className="text-xs italic text-slate-600 border-l-2 border-[#C5A059] pl-3 py-1 font-sans">"{a.key_legal_principle}"</p>
       )}
     </div>
   );
@@ -189,34 +189,36 @@ export function CouncilCard({ memberId, memberData }) {
         <StatusBadge status={status} />
       </div>
 
-      <div className="p-5 min-h-[200px]">
-        {status === "pending" && (
-          <div className="flex flex-col items-center justify-center h-36 text-gray-400">
-            <Clock className="w-6 h-6 mb-2 opacity-40" strokeWidth={1.5} />
-            <p className="text-xs font-sans">Awaiting assignment...</p>
-          </div>
-        )}
-        {status === "analyzing" && (
-          <div className="flex flex-col items-center justify-center h-36">
-            <div className="flex gap-1.5 mb-3">
-              <div className="w-2 h-2 rounded-full bg-[#C5A059] dot-1" />
-              <div className="w-2 h-2 rounded-full bg-[#C5A059] dot-2" />
-              <div className="w-2 h-2 rounded-full bg-[#C5A059] dot-3" />
+      <div className="p-5">
+        <div className="bg-white rounded-md p-4 min-h-[200px]">
+          {status === "pending" && (
+            <div className="flex flex-col items-center justify-center h-36 text-gray-400">
+              <Clock className="w-6 h-6 mb-2 opacity-40" strokeWidth={1.5} />
+              <p className="text-xs font-sans">Awaiting assignment...</p>
             </div>
-            <p className="text-xs text-gray-400 font-sans">Analyzing case...</p>
-          </div>
-        )}
-        {status === "complete" && ContentComponent && (
-          <div className="animate-fade-in-up text-white">
-            <ContentComponent a={analysis} />
-          </div>
-        )}
-        {status === "failed" && (
-          <div className="flex items-center gap-2 text-red-400 text-xs font-sans">
-            <AlertCircle className="w-4 h-4" strokeWidth={1.5} />
-            <span>Analysis failed. Please retry.</span>
-          </div>
-        )}
+          )}
+          {status === "analyzing" && (
+            <div className="flex flex-col items-center justify-center h-36">
+              <div className="flex gap-1.5 mb-3">
+                <div className="w-2 h-2 rounded-full bg-[#C5A059] dot-1" />
+                <div className="w-2 h-2 rounded-full bg-[#C5A059] dot-2" />
+                <div className="w-2 h-2 rounded-full bg-[#C5A059] dot-3" />
+              </div>
+              <p className="text-xs text-gray-600 font-sans">Analyzing case...</p>
+            </div>
+          )}
+          {status === "complete" && ContentComponent && (
+            <div className="animate-fade-in-up text-slate-900">
+              <ContentComponent a={analysis} />
+            </div>
+          )}
+          {status === "failed" && (
+            <div className="flex items-center gap-2 text-red-600 text-xs font-sans">
+              <AlertCircle className="w-4 h-4" strokeWidth={1.5} />
+              <span>Analysis failed. Please retry.</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
