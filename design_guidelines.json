@@ -1,31 +1,93 @@
 {
-  "theme": "Light",
-  "archetype": "5 - Jewel & Luxury (Premium Legal/Authority)",
-  "global_instructions": "Improve overall colors, header, and professional feel without altering the layout. Keep the navy and gold brand identity but elevate it with gradients, soft glows, and warmer neutrals to make it feel more approachable yet authoritative.",
+  "theme": "LIGHT",
+  "archetype": "4 (Swiss & High-Contrast) + 5 (Jewel & Luxury)",
   "colors": {
-    "background_warm": "#FAF9F6",
-    "card_bg": "#FFFFFF",
-    "primary_navy": "#0A1428",
-    "primary_navy_light": "#12223A",
-    "accent_gold": "#C5A059",
-    "border_soft": "rgba(11, 25, 44, 0.08)"
+    "background": "#F8F9FA",
+    "surface": "#FFFFFF",
+    "primary": "#0B192C",
+    "primary_foreground": "#FFFFFF",
+    "accent": "#C5A059",
+    "accent_foreground": "#FFFFFF",
+    "muted": "#E2E8F0",
+    "muted_foreground": "#475569",
+    "border": "#E2E8F0",
+    "ai_council_card": "#0B192C",
+    "ai_council_border": "rgba(197, 160, 89, 0.3)"
   },
   "typography": {
-    "headings": "Playfair Display, serif (add `tracking-tight` for large headings)",
-    "body": "IBM Plex Sans, sans-serif",
-    "labels": "tracking-[0.15em] uppercase text-[10px] sm:text-xs font-semibold"
+    "headings": "Cormorant Garamond",
+    "body": "IBM Plex Sans",
+    "font_weights": {
+      "headings": "600, 700",
+      "body": "400, 500"
+    },
+    "hierarchy": {
+      "h1": "text-5xl lg:text-6xl tracking-tight leading-none text-primary font-serif",
+      "h2": "text-3xl lg:text-4xl tracking-tight text-primary font-serif",
+      "h3": "text-xl lg:text-2xl tracking-tight text-primary font-serif",
+      "body": "text-base text-muted-foreground leading-relaxed font-sans",
+      "label": "text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold font-sans"
+    }
   },
-  "component_instructions": {
-    "Global_Background": "Replace `bg-[#F8F9FA]` with `bg-[#FAF9F6]` across AnalysisDashboard.jsx and other main wrapper divs to introduce color warmth.",
-    "Navbar": "Refine the glassmorphism in `Navbar.jsx`: use `bg-white/80 backdrop-blur-2xl border-slate-200/60 shadow-sm`. Update the active nav link to have a slightly bolder gold border and maybe a subtle text color shift.",
-    "AnalysisDashboard_Header": "In `AnalysisDashboard.jsx`, replace the flat `bg-[#0B192C]` with a rich gradient: `bg-gradient-to-br from-[#0A1428] via-[#0B192C] to-[#11233D] relative overflow-hidden`. Add an absolute positioned div (`bg-[#C5A059]/10 blur-[100px] w-96 h-96 rounded-full top-0 right-0 pointer-events-none`) to create a subtle warm inner glow. Ensure the content wrapper has `relative z-10`.",
-    "StageStepper": "Enhance the `StageStep` in `AnalysisDashboard.jsx`. Active state: `border-[#C5A059] bg-[#C5A059]/10 text-[#C5A059] shadow-[0_0_12px_rgba(197,160,89,0.3)]`. Complete state: `bg-emerald-500/15 border-emerald-500/50 text-emerald-400`. Inactive state: `border-white/10 text-white/30`. Update `StageConnector` similarly.",
-    "StatusBadges": "Soften the status badges in the header. Use `bg-[#C5A059]/10 border-[#C5A059]/20 text-[#C5A059]` instead of harsher opacities. Ensure the text is slightly bolder.",
-    "Tabs": "In `TabsList` and `TabsTrigger`, add a subtle background tint for the active tab (e.g., `data-[state=active]:bg-[#FAF9F6]`) and keep the gold border but make it more pronounced. Inactive tabs should be `text-slate-500 hover:text-slate-700`.",
-    "CouncilCards": "In `CouncilCard.jsx`, soften the border to `border-slate-200/60` and add a subtle ambient shadow `shadow-[0_4px_24px_-8px_rgba(11,25,44,0.06)]` or similar. The top colored accent bar can remain but consider `h-1.5` instead of `h-1` to make it a bit more deliberate.",
-    "ChiefJusticeCard": "In `ChiefJusticeCard.jsx`, replace `bg-[#0B192C]` with `bg-gradient-to-br from-[#0B192C] to-[#12223A] border border-[#C5A059]/20 shadow-[0_8px_32px_-8px_rgba(11,25,44,0.15)] relative overflow-hidden`. The synthesis text can be `text-slate-200` to be slightly warmer than plain white/gray."
+  "spacing": {
+    "container_padding": "p-6 lg:p-12",
+    "section_gap": "gap-12 lg:gap-24",
+    "card_padding": "p-6 lg:p-8"
+  },
+  "surfaces": {
+    "dashboard_card": "bg-white border border-gray-200 shadow-sm rounded-lg",
+    "ai_council_card": "bg-[#0B192C] border border-[#C5A059]/30 shadow-lg rounded-xl text-white",
+    "glass_header": "bg-white/80 backdrop-blur-xl border-b border-gray-200/50"
+  },
+  "motion": {
+    "hover": "transition-transform duration-300 ease-out hover:-translate-y-1 hover:shadow-md",
+    "entrance": "animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out"
+  },
+  "components": {
+    "button_primary": "bg-[#0B192C] text-white hover:bg-[#0B192C]/90 px-6 py-3 rounded-md font-medium transition-all",
+    "button_accent": "bg-[#C5A059] text-white hover:bg-[#b08d4b] px-6 py-3 rounded-md font-medium transition-all shadow-md shadow-[#C5A059]/20",
+    "input": "bg-white border border-gray-300 focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059] rounded-md px-4 py-3 text-primary",
+    "badge": "bg-gray-100 text-[#0B192C] border border-gray-200 px-2 py-1 rounded text-xs font-semibold tracking-wide"
+  },
+  "layout": {
+    "grid_bento": "grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-6",
+    "council_deliberation_grid": "grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8",
+    "council_chief_card": "col-span-1 lg:col-span-12 row-span-2",
+    "council_member_card": "col-span-1 lg:col-span-3"
   },
   "media": {
-    "image_urls": {}
-  }
+    "images": {
+      "hero_background": {
+        "url": "https://images.unsplash.com/photo-1589994965851-a8f479c573a9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzN8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMGp1c3RpY2UlMjBzY2FsZXN8ZW58MHx8fHwxNzc2Mzk0OTQzfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract justice statue with sword, deep dark tones."
+      },
+      "supreme_court": {
+        "url": "https://images.unsplash.com/photo-1564509117020-06993c554955?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA0MTJ8MHwxfHNlYXJjaHwzfHxzdXByZW1lJTIwY291cnQlMjBidWlsZGluZ3xlbnwwfHx8fDE3NzYzOTQ5NDN8MA&ixlib=rb-4.1.0&q=85",
+        "description": "White concrete structure symbolizing the supreme court."
+      },
+      "law_books": {
+        "url": "https://images.unsplash.com/photo-1769092992534-f2d0210162b9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODR8MHwxfHNlYXJjaHwyfHxvbGQlMjBsYXclMjBib29rc3xlbnwwfHx8fDE3NzYzOTQ5NDN8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Old law books on a shelf."
+      },
+      "professional_lawyer": {
+        "url": "https://images.unsplash.com/photo-1771244688590-1e481dba1b5a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NjV8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBpbmRpYW4lMjBsYXd5ZXIlMjBzaXR0aW5nJTIwaW4lMjBvZmZpY2V8ZW58MHx8fHwxNzc2Mzk0OTM0fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Professional sitting in office, to be used for judge/bias intelligence placeholder."
+      }
+    },
+    "icons": {
+      "library": "lucide-react",
+      "instruction": "Use lucide-react for all interface icons (Scale, Gavel, User, FileText, Map, Shield, Mic). Keep stroke-width to 1.5 for a premium feel."
+    }
+  },
+  "instructions_to_main_agent": [
+    "Use a stark white (#FFFFFF) and off-white (#F8F9FA) canvas with striking deep navy (#0B192C) blocks to create tension and authority. This is a LIGHT theme that heavily utilizes dark contrasting elements.",
+    "Implement the 5-member AI Legal Council using the bento grid system: 4 smaller dark navy cards for Prosecution, Defense, Scholar, and Bias Detector, and 1 massive spanning card for the Chief Justice Synthesis. These cards must have a 1px gold border (border-[#C5A059]/30) for a jewel/premium feel.",
+    "Use 'Cormorant Garamond' for all headings to evoke legal authority, paired with 'IBM Plex Sans' for data density and readability. Make sure to load these from Google Fonts.",
+    "The CNR search should be a massive, dominant element at the top, perhaps housed in a deep navy hero block with the 'hero_background' image at 20% opacity. Include a prominent gold mic icon button for Sarvam AI voice input next to the search bar.",
+    "For the Judicial Bias Intelligence and Similar Cases, use flat, crisp, white cards with sharp edges and 1px borders to maintain a highly technical, objective look.",
+    "Implement standard data-testids for all interactive elements (e.g., data-testid='cnr-submit-btn', data-testid='voice-input-btn', data-testid='council-deliberation-view').",
+    "Do NOT use 'Inter' for headings. Always ensure strong contrast ratios (e.g., White text on #0B192C).",
+    "Avoid generic Tailwind shadows. Use precise, crisp borders and subtle dropshadows only on hover.",
+    "Ensure all Shadcn components (Tables, Inputs, Dialogs) are customized to match the Navy/Gold/White color palette and sharp border-radius."
+  ]
 }
